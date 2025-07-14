@@ -12,20 +12,6 @@ from langchain.chains import RetrievalQA
 
 import streamlit as st
 
-# 주소정보 설정
-st.markdown("---")  # 구분선
-
-st.markdown(
-    """
-    <div style='text-align: center; font-size: 13px; color: #666; line-height: 1.6; margin-top: 30px;'>
-        수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
-        사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
-        이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 # 페이지 설정
 st.set_page_config(page_title="삼성전기 존중노동조합 상담사", layout="centered")
 
@@ -76,6 +62,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.image("1.png", width=300)
+st.markdown("---")  # 구분선
+
+st.markdown(
+    """
+    <div style='text-align: center; font-size: 13px; color: #666; line-height: 1.6; margin-top: 30px;'>
+        수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
+        사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
+        이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
 st.write("안녕하세요! 노조 관련 자료를 기반으로 질문에 답변해 드립니다. 아래에 질문을 입력해주세요.")
 st.markdown("---")
