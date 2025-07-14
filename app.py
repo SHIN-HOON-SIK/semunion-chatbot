@@ -3,8 +3,8 @@ import streamlit as st
 st.set_page_config(page_title="SEMunion Chatbot", layout="centered")
 
 st.markdown("""
-    <div style='text-align: center; margin-bottom: 10px;'>
-        <img src='https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/1.png' width='320'/>
+    <div style='text-align: left; margin-bottom: 10px;'>
+        <img src='https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/1.png' width='400'/>
     </div>
 """, unsafe_allow_html=True)
 
