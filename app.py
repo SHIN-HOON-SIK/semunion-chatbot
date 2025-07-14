@@ -10,6 +10,23 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
+import streamlit as st
+
+# 페이지 설정
+st.set_page_config(page_title="삼성전기 존중노동조합 상담사", layout="centered")
+
+# 💡 전체 배경 흰색으로 설정하는 CSS
+st.markdown(
+    """
+    <style>
+        .stApp {
+            background-color: white !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # OpenAI API 키 설정
 try:
     openai_api_key = st.secrets["OPENAI_API_KEY"]
@@ -44,7 +61,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.image("1.png", width=110)
+st.image("1.png", width=300)
 st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
 st.write("안녕하세요! 노조 관련 자료를 기반으로 질문에 답변해 드립니다. 아래에 질문을 입력해주세요.")
 st.markdown("---")
@@ -106,7 +123,7 @@ except Exception as e:
 
 query = st.text_input(
     "무엇이 궁금하신가요?",
-    placeholder="예: 7월 정기협의 주요 의제는 무엇인가요?",
+    placeholder="여기에 입력해 주세요",
     key="query_input"
 )
 
