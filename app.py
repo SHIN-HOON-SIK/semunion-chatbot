@@ -24,8 +24,8 @@ if not openai_api_key:
 BASE_DIR = Path(__file__).parent
 PDF_FILES_DIR = BASE_DIR / "data"
 PDF_FILES = [
-     "policy_agenda_250627.pdf",
-    "union_meeting_250704.pdf"
+    "2025_government_labor_policy_agenda.pdf",
+    "seme_union_meeting_250704.pdf"
 ]
 
 # UI 구성
