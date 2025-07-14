@@ -1,7 +1,20 @@
-streamlit
-langchain
-langchain-openai
-langchain-community
-pypdf
-faiss-cpu
-tiktoken
+# --- Streamlit 앱 실행용 ---
+streamlit>=1.30.0
+
+# --- LangChain 및 문서 QA ---
+langchain>=0.1.20
+langchain-community>=0.0.36
+langchain-openai>=0.1.6
+openai>=1.30.0
+
+# --- 벡터 DB (로컬용 FAISS) ---
+faiss-cpu>=1.8.0
+
+# --- PDF 문서 로더 ---
+PyPDF2>=3.0.1
+
+# --- 텍스트 전처리 ---
+tiktoken>=0.5.1
+
+# --- 기타 필수 유틸 ---
+python-dotenv>=1.0.1
