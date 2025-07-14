@@ -150,7 +150,7 @@ if query:
             answer_text = result["result"].strip()
 
             if not answer_text or ("정보" in answer_text and "없" in answer_text):
-                st.info("죄송하지만 제공된 정보에는 해당 내용이 포함되어 있지 않습니다.")
+                st.info("죄송하지만 집행부가 업로드 한 자료에는 해당 내용이 포함되어 있지 않습니다.빠른 업데이트하겠습니다.")
             else:
                 st.success(answer_text)
 
