@@ -11,7 +11,7 @@ openai>=1.30.0
 faiss-cpu>=1.8.0
 
 # --- PDF 문서 로더 ---
-PyPDF2>=3.0.1
+pypdf>=3.15.2
 
 # --- 텍스트 전처리 ---
 tiktoken>=0.5.1
