@@ -85,3 +85,19 @@ if query:
             for i, doc in enumerate(result["source_documents"]):
                 st.markdown(f"**문서 {i+1}:** {doc.metadata['source']}")
                 st.write(doc.page_content[:1000])  # 1000자 미리보기
+
+# 🔄 텍스트 분할 전 처리
+docs_raw = documents1 + documents2
+
+# 한글 포함 문서의 유니코드 오류 방지
+for doc in docs_raw:
+    try:
+        doc.page_content = doc.page_content.encode('utf-8').decode('utf-8')
+    except UnicodeEncodeError:
+        st.warning("⚠️ 문서 인코딩 중 문제가 발생했습니다.")
+        st.stop()
+
+# 텍스트 분할
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+texts = text_splitter.split_documents(docs_raw)
+
