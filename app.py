@@ -16,8 +16,8 @@ if not openai_api_key:
 # ✅ 문서 로딩 함수 (PDF 2개)
 @st.cache_resource
 def load_documents():
-    loader1 = PyPDFLoader("./data/25년 정부 노동정책 주요 아젠다(250627).pdf")
-    loader2 = PyPDFLoader("./data/존중노조 노사 정기협의체(250704).pdf")
+             loader1 = PyPDFLoader("./data/policy_agenda_250627.pdf")
+             loader2 = PyPDFLoader("./data/union_meeting_250704.pdf")
     docs = loader1.load() + loader2.load()
 
     # 🔐 한글 인코딩 오류 방지
