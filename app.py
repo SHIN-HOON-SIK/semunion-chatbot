@@ -4,7 +4,7 @@ st.set_page_config(page_title="SEMunion Chatbot", layout="centered")
 
 st.markdown("""
     <div style='text-align: center; margin-bottom: 0px;'>
-        <img src='https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/2.png' width='240'/>
+        <img src='https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/1.png' width='240'/>
     </div>
 """, unsafe_allow_html=True)
 
