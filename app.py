@@ -10,8 +10,6 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
-import streamlit as st
-
 # 페이지 설정
 st.set_page_config(page_title="삼성전기 존중노동조합 상담사", layout="centered")
 
@@ -46,11 +44,9 @@ PDF_FILES = [
 ]
 
 # UI 구성
-st.set_page_config(page_title="노조 상담 챗봇", page_icon="🤖")
-
 st.markdown("""
 <style>
-    .stApp { background-color: #f0f2f6; }
+    .stApp { background-color: white; }
     .stSpinner > div > div { border-top-color: #0062ff; }
     .stSuccess {
         background-color: #e6f7ff;
@@ -62,8 +58,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.image("1.png", width=300)
-st.markdown(
-    """
+
+st.markdown("""
     <style>
     .footer-left {
         position: fixed;
@@ -81,9 +77,8 @@ st.markdown(
         사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
         이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
+
 st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
 st.write("안녕하세요!노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
@@ -103,7 +98,7 @@ def load_all_documents(pdf_paths):
     return all_docs
 
 @st.cache_resource
-def split_documents_into_chunks(_documents):  # ← 수정된 부분
+def split_documents_into_chunks(_documents):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     return text_splitter.split_documents(_documents)
 
@@ -152,7 +147,12 @@ if query:
     with st.spinner("답변을 생성하고 있습니다... 잠시만 기다려주세요."):
         try:
             result = qa_chain.invoke({"query": query})
-            st.success(result["result"])
+            answer_text = result["result"].strip()
+
+            if not answer_text or ("정보" in answer_text and "없" in answer_text):
+                st.info("죄송하지만 제공된 정보에는 해당 내용이 포함되어 있지 않습니다.")
+            else:
+                st.success(answer_text)
 
             with st.expander("📄 답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
