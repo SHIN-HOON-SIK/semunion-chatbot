@@ -8,5 +8,5 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-st.title("노조 전문 상담사")
+st.title("※노조 전문 상담사")
 st.write("안녕하세요! 여기에 질문을 입력하면, 노조 관련 자료에서 자동으로 답변을 제공합니다.")
