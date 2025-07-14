@@ -4,9 +4,9 @@ st.set_page_config(page_title="SEMunion Chatbot", layout="centered")
 
 st.markdown(
     """
-    <div style='text-align: center; margin-bottom: 20px;'>
-        <img src='https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/1.png' width='80' style='vertical-align: middle; margin-right: 10px;'/>
-        <span style='font-size: 32px; font-weight: bold; vertical-align: middle;'>삼성전기 존중노동조합 상담사</span>
+    <div style='display: flex; align-items: center; margin-bottom: 30px;'>
+        <img src='https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/1.png' width='80' style='margin-right: 12px;'/>
+        <h1 style='margin: 0; font-size: 30px;'>삼성전기 존중노동조합 상담사</h1>
     </div>
     """,
     unsafe_allow_html=True
