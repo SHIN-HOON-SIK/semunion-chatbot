@@ -27,7 +27,7 @@ st.markdown(
 st.write("안녕하세요! 여기에 질문을 입력하면, 노조 관련 자료에서 자동으로 답변을 제공합니다.")
 
 # 파일 로딩 (문서 위치는 `/data/sample.txt`로 가정)
-loader = TextLoader("./data/sample.txt", encoding='utf-8')
+loader = PyPDFLoader("./data/삼성전기_상담자료_테스트.pdf")
 documents = loader.load()
 
 # 문서 분할 및 벡터화
