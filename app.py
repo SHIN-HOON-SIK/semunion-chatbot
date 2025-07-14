@@ -10,7 +10,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
-# --- CONFIGURATION ---
+# OpenAI API 키 설정
 try:
     openai_api_key = st.secrets["OPENAI_API_KEY"]
 except (KeyError, AttributeError):
@@ -20,7 +20,7 @@ if not openai_api_key:
     st.error("OpenAI API 키가 설정되지 않았습니다. Streamlit secrets 또는 환경변수를 확인해주세요.")
     st.stop()
 
-# --- PDF 파일 경로 설정 ---
+# PDF 파일 경로 설정
 BASE_DIR = Path(__file__).parent
 PDF_FILES_DIR = BASE_DIR / "data"
 PDF_FILES = [
@@ -28,7 +28,7 @@ PDF_FILES = [
     "seme_union_meeting_250704.pdf"
 ]
 
-# --- UI SETUP ---
+# UI 구성
 st.set_page_config(page_title="노조 상담 챗봇", page_icon="🤖")
 
 st.markdown("""
@@ -49,8 +49,7 @@ st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left
 st.write("안녕하세요! 노조 관련 자료를 기반으로 질문에 답변해 드립니다. 아래에 질문을 입력해주세요.")
 st.markdown("---")
 
-# --- DATA LOADING AND PROCESSING ---
-
+# 문서 로딩 및 처리 함수
 @st.cache_resource
 def load_all_documents(pdf_paths):
     all_docs = []
@@ -78,8 +77,7 @@ def create_vector_store(_texts, _embedding_model):
         st.error(f"벡터 DB 생성 중 오류 발생: {e}")
         st.stop()
 
-# --- QA CHAIN SETUP ---
-
+# 질의응답 체인 구성
 @st.cache_resource
 def initialize_qa_chain():
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
@@ -99,8 +97,7 @@ def initialize_qa_chain():
         return_source_documents=True
     )
 
-# --- MAIN APPLICATION LOGIC ---
-
+# 앱 실행
 try:
     qa_chain = initialize_qa_chain()
 except Exception as e:
@@ -119,7 +116,7 @@ if query:
             result = qa_chain.invoke({"query": query})
             st.success(result["result"])
 
-            with st.expander("📎 답변 근거 문서 보기"):
+            with st.expander("답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
                     source_name = Path(doc.metadata.get('source', '알 수 없는 출처')).name
                     page = doc.metadata.get('page')
