@@ -6,10 +6,10 @@ import openai
 
 app = Flask(__name__)
 
-# OpenAI API 키 설정
-openai.api_key = "YOUR_OPENAI_API_KEY"  # 여기에 실제 키 입력
+# OpenAI API 키 입력
+openai.api_key = "YOUR_OPENAI_API_KEY"  # 실제 키로 바꿔주세요
 
-# 예시 문서 데이터 (향후 외부 파일/DB 연동 가능)
+# 임시 문서 데이터
 documents = [
     {
         "title": "2025-03-07 상조회 변경 공지",
@@ -26,7 +26,7 @@ def ask():
     data = request.get_json()
     question = data.get("question", "")
 
-    # 단순 키워드 필터링 (벡터 검색은 추후 도입 가능)
+    # 간단한 키워드 기반 문서 필터링
     relevant_docs = [
         f"{doc['title']}:\n{doc['content']}"
         for doc in documents
@@ -42,8 +42,7 @@ def ask():
                 {"role": "user", "content": f"문서:\n{context}\n\n질문:\n{question}"}
             ]
         )
-        answer = response['choices'][0]['message']['content']
-        return jsonify({"answer": answer})
+        return jsonify({"answer": response.choices[0].message.content})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
