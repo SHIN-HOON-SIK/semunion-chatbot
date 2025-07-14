@@ -17,14 +17,14 @@ except (KeyError, AttributeError):
     openai_api_key = os.getenv("OPENAI_API_KEY")
 
 if not openai_api_key:
-    st.error("OpenAI API 키가 설정되지 않았습니다. Streamlit secrets 또는 환경변수를 확인해주세요.")
+    st.error("❌ OpenAI API 키가 설정되지 않았습니다. Streamlit secrets 또는 환경변수를 확인해주세요.")
     st.stop()
 
 # PDF 파일 경로 설정
 BASE_DIR = Path(__file__).parent
 PDF_FILES_DIR = BASE_DIR / "data"
 PDF_FILES = [
-     "policy_agenda_250627.pdf",
+    "policy_agenda_250627.pdf",
     "union_meeting_250704.pdf"
 ]
 
@@ -65,9 +65,9 @@ def load_all_documents(pdf_paths):
     return all_docs
 
 @st.cache_resource
-def split_documents_into_chunks(documents):
+def split_documents_into_chunks(_documents):  # ← 수정된 부분
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    return text_splitter.split_documents(documents)
+    return text_splitter.split_documents(_documents)
 
 @st.cache_resource
 def create_vector_store(_texts, _embedding_model):
@@ -84,7 +84,7 @@ def initialize_qa_chain():
     full_pdf_paths = [PDF_FILES_DIR / fname for fname in PDF_FILES]
     documents = load_all_documents(full_pdf_paths)
     if not documents:
-        st.error("로드할 문서가 없습니다. 'data' 폴더에 PDF 파일이 있는지 확인해주세요.")
+        st.error("❌ 로드할 문서가 없습니다. 'data' 폴더에 PDF 파일이 있는지 확인해주세요.")
         st.stop()
     text_chunks = split_documents_into_chunks(documents)
     db = create_vector_store(text_chunks, embeddings)
@@ -116,7 +116,7 @@ if query:
             result = qa_chain.invoke({"query": query})
             st.success(result["result"])
 
-            with st.expander("답변 근거 문서 보기"):
+            with st.expander("📄 답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
                     source_name = Path(doc.metadata.get('source', '알 수 없는 출처')).name
                     page = doc.metadata.get('page')
@@ -125,4 +125,4 @@ if query:
                     st.write(f'"{doc.page_content.strip()[:500]}..."')
                     st.markdown("---")
         except Exception as e:
-            st.error(f"답변을 생성하는 중 오류가 발생했습니다: {e}")
+            st.error(f"❌ 답변 생성 중 오류 발생: {e}")
