@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 
 # --- CONFIGURATION ---
+# OpenAI API 키 설정
 # Load OpenAI API key from Streamlit secrets
 # Fallback to environment variable if not found in secrets
 try:
