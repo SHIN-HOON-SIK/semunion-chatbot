@@ -62,7 +62,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.image("1.png", width=300)
-st.markdown("---")  # 구분선
 st.markdown(
     """
     <style>
@@ -86,8 +85,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
-st.write("안녕하세요! 노조 관련 자료를 기반으로 질문에 답변해 드립니다. 아래에 질문을 입력해주세요.")
-st.markdown("---")
+st.write("안녕하세요!<br>노조 집행부에서 업로드 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
 # 문서 로딩 및 처리 함수
 @st.cache_resource
@@ -145,7 +143,7 @@ except Exception as e:
     st.stop()
 
 query = st.text_input(
-    "무엇이 궁금하신가요?",
+    "무엇이 물어보세요.",
     placeholder="여기에 입력해 주세요",
     key="query_input"
 )
