@@ -124,18 +124,37 @@ def initialize_qa_chain():
         return_source_documents=True
     )
 
+# 질문 보정용 확장 함수
+@st.cache_resource
+def get_query_expander():
+    llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
+    def expand(query):
+        prompt = (
+            f"다음 사용자의 질문을 가능한 한 명확하고 자세한 문장으로 확장해줘. "
+            f"단어만 있는 경우 전체 문장으로 바꾸고, 배경 맥락이 부족한 경우 보완해줘. "
+            f"예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'
+"
+            f"질문: {query}\n확장된 질문:"
+        )
+        response = llm.invoke(prompt)
+        return response.content.strip()
+    return expand
+
 # 앱 실행
 try:
     qa_chain = initialize_qa_chain()
+    query_expander = get_query_expander()
 except Exception as e:
     st.error(f"챗봇 초기화 중 오류 발생: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
     st.stop()
 
-query = st.text_input(
+raw_query = st.text_input(
     "[무엇이든 물어보세요.]",
     placeholder="여기에 질문을 입력해 주세요.",
     key="query_input"
 )
+
+query = query_expander(raw_query) if raw_query else ""
 
 if query:
     with st.spinner("답변을 생성하고 있습니다... 잠시만 기다려주세요."):
