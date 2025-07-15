@@ -44,22 +44,9 @@ PDF_FILES = [
 ]
 
 # UI 구성
-st.markdown("""
-<style>
-    .stApp { background-color: #f0f2f6; }
-    .stSpinner > div > div { border-top-color: #0062ff; }
-    .stSuccess {
-        background-color: #e6f7ff;
-        border: 1px solid #91d5ff;
-        border-radius: 8px;
-        color: #0050b3;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 st.image("1.png", width=300)
 st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
-st.write("안녕하세요! 노조 관련 자료를 기반으로 질문에 답변해 드립니다. 아래에 질문을 입력해주세요.")
+st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
 # 문서 로딩 및 처리 함수
 @st.cache_resource
@@ -126,7 +113,12 @@ if query:
     with st.spinner("답변을 생성하고 있습니다... 잠시만 기다려주세요."):
         try:
             result = qa_chain.invoke({"query": query})
-            st.success(result["result"])
+            answer_text = result["result"]
+
+            if not answer_text or ("정보" in answer_text and "없" in answer_text):
+                st.info("죄송하지만 집행부가 업로드 한 자료에는 해당 내용이 포함되어 있지 않습니다. 빠른 업데이트하겠습니다.")
+            else:
+                st.success(answer_text)
 
             with st.expander("📄 답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
@@ -134,7 +126,8 @@ if query:
                     page = doc.metadata.get('page')
                     page_number = page + 1 if isinstance(page, int) else "알 수 없음"
                     st.markdown(f"**문서 {i+1}:** `{source_name}` (페이지: {page_number})")
-                    st.write(f'"{doc.page_content.strip()[:500]}...")
+                    content = doc.page_content.strip().replace("\u0000", "")[:500]
+                    st.write(content + "...")
                     st.markdown("---")
         except Exception as e:
             st.error(f"❌ 답변 생성 중 오류 발생: {e}")
