@@ -14,7 +14,7 @@ from langchain.chains import RetrievalQA
 st.set_page_config(
     page_title="삼성전기 존중노동조합 상담사",
     layout="centered",
-    page_icon="logo_union_hands.png"  # 손 모양 이미지를 favicon으로 사용
+    page_icon="logo_union_hands.png"
 )
 
 # 💡 전체 배경 흰색 + 좌측 하단 정보 표기 CSS
@@ -62,8 +62,16 @@ PDF_FILES = [
 ]
 
 # UI 구성
-st.image("logo_union_hands.png", width=70)
-st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div style='display: flex; align-items: center;'>
+        <img src='logo_union_hands.png' width='60' style='margin-right: 12px;'>
+        <h1 style='color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
 # 문서 로딩 및 처리 함수
