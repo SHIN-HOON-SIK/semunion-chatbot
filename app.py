@@ -10,8 +10,14 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.schema import HumanMessage
-from PyPDF2 import PdfReader
 from langchain.schema import Document
+
+# PyPDF2 안전하게 import
+try:
+    from PyPDF2 import PdfReader
+except ImportError as e:
+    st.error("❌ PyPDF2 모듈을 찾을 수 없습니다. requirements.txt 파일에 'PyPDF2'를 추가하거나 설치해 주세요.")
+    st.stop()
 
 # 페이지 설정
 st.set_page_config(
