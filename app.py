@@ -4,6 +4,7 @@
 import os
 from pathlib import Path
 import re
+import hashlib
 import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -107,9 +108,19 @@ def extract_text_from_pdf(path):
         st.warning(f"'{path.name}' 텍스트 추출 실패: {e}")
         return None
 
+# PDF 변경 감지용 해시
+
+def compute_file_hash(file_paths):
+    hash_md5 = hashlib.md5()
+    for path in sorted(file_paths):
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
 # 문서 로딩 및 처리 함수
 @st.cache_resource
-def load_all_documents(pdf_paths):
+def load_all_documents_with_hash(pdf_paths, file_hash):
     all_docs = []
     for path in pdf_paths:
         if path.exists():
@@ -154,7 +165,8 @@ def create_vector_store(_texts, _embedding_model):
 def initialize_qa_chain():
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     full_pdf_paths = [PDF_FILES_DIR / fname for fname in PDF_FILES]
-    documents = load_all_documents(full_pdf_paths)
+    file_hash = compute_file_hash(full_pdf_paths)
+    documents = load_all_documents_with_hash(full_pdf_paths, file_hash)
     if not documents:
         st.error("❌ 로드할 문서가 없습니다. 'data' 폴더에 PDF 파일이 있는지 확인해주세요.")
         st.stop()
