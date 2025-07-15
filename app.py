@@ -66,7 +66,7 @@ st.markdown(
     """
     <div style='display: flex; align-items: center;'>
         <img src='logo_union_hands.png' width='60' style='margin-right: 12px;'>
-        <h1 style='color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>
+        <h1 style='color: #0d1a44; margin: 0;'>삼성전기 존중노동조합 상담사</h1>
     </div>
     """,
     unsafe_allow_html=True
