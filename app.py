@@ -131,7 +131,7 @@ except Exception as e:
 
 query = st.text_input(
     "[무엇이든 물어보세요.]",
-    placeholder="예: 7월 정기협의 주요 의제는 무엇인가요?",
+    placeholder="여기에 질문을 입력해 주세요.",
     key="query_input"
 )
 
