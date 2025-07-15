@@ -10,8 +10,12 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
-# 페이지 설정
-st.set_page_config(page_title="삼성전기 존중노동조합 상담사", layout="centered")
+# 페이지 설정 (손 모양 로고 사용)
+st.set_page_config(
+    page_title="삼성전기 존중노동조합 상담사",
+    layout="centered",
+    page_icon="logo_union_hands.png"  # 여기에 손 모양 이미지를 favicon으로 사용
+)
 
 # 💡 전체 배경 흰색 + 좌측 하단 정보 표기 CSS
 st.markdown(
@@ -32,7 +36,7 @@ st.markdown(
     </style>
     <div class="footer-left">
         수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
-        사업자등록번호: 133-82-71927 ｜ 위원장: 신훈식 ｜ 대표번호: 010-9496-6517<br>
+        사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
         이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
     </div>
     """,
@@ -58,7 +62,7 @@ PDF_FILES = [
 ]
 
 # UI 구성
-st.image("1.png", width=300)
+st.image("logo_union.png", width=70)
 st.markdown("<h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
 st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
@@ -87,7 +91,7 @@ def create_vector_store(_texts, _embedding_model):
     try:
         return FAISS.from_documents(_texts, _embedding_model)
     except Exception as e:
-        st.error(f"벡터 DB 생성 중 오류 발생: {e}")
+        st.error(f"벡터 DB 생성 중 오류 발생: {str(e)}")
         st.stop()
 
 # 질의응답 체인 구성
@@ -114,12 +118,12 @@ def initialize_qa_chain():
 try:
     qa_chain = initialize_qa_chain()
 except Exception as e:
-    st.error(f"챗봇 초기화 중 오류 발생: {e}")
+    st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
     st.stop()
 
 query = st.text_input(
     "[무엇이든 물어보세요.]",
-    placeholder="여기에 질문을 입력해 주세요.",
+    placeholder="예: 7월 정기협의 주요 의제는 무엇인가요?",
     key="query_input"
 )
 
@@ -144,4 +148,4 @@ if query:
                     st.write(content + "...")
                     st.markdown("---")
         except Exception as e:
-            st.error(f"❌ 답변 생성 중 오류 발생: {e}")
+            st.error(f"❌ 답변 생성 중 오류 발생: {str(e)}")
