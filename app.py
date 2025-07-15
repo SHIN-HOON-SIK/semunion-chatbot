@@ -147,11 +147,13 @@ def get_query_expander():
             return query
     return expand
 
+# 사용자 입력: 벡터 검색 문서 수 설정
+k = st.sidebar.slider("🔍 유사문서 검색 개수 (k)", min_value=1, max_value=10, value=6)
+
 # 앱 실행
 try:
-    default_k = 6
     query_expander = get_query_expander()
-    qa_chain = initialize_qa_chain(default_k)
+    qa_chain = initialize_qa_chain(k)
 except Exception as e:
     st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
     st.stop()
