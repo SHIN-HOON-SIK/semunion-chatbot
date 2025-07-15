@@ -76,9 +76,6 @@ st.markdown(
 
 st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
-# 사용자 설정: 벡터 검색 k값
-k_value = st.sidebar.number_input("🔍 유사 문서 검색 개수 (k)", min_value=1, max_value=10, value=6, step=1)
-
 # 문서 로딩 및 처리 함수
 @st.cache_resource
 def load_all_documents(pdf_paths):
@@ -118,7 +115,7 @@ def initialize_qa_chain():
         st.stop()
     text_chunks = split_documents_into_chunks(documents)
     db = create_vector_store(text_chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k_value})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
