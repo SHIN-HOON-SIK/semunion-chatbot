@@ -59,6 +59,7 @@ PDF_FILES_DIR = BASE_DIR / "data"
 PDF_FILES = [
     "policy_agenda_250627.pdf",
     "union_meeting_250704.pdf"
+    "SEMUNION_DATA_BASE.pdf"
 ]
 
 # UI 구성 (로고와 제목을 중앙 정렬)
