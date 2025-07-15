@@ -13,7 +13,7 @@ from langchain.chains import RetrievalQA
 # 페이지 설정
 st.set_page_config(page_title="삼성전기 존중노동조합 상담사", layout="centered")
 
-# 💡 전체 배경 흰색으로 설정하는 CSS
+# 💡 전체 배경 흰색 + 좌측 하단 정보 표기 CSS
 st.markdown(
     """
     <style>
