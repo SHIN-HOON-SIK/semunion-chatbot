@@ -46,9 +46,9 @@ st.markdown(
 
 # OpenAI API 키 설정
 try:
-    openai_api_key = st.secrets["OPENAI_API_KEY"]
+    openai_api_key = st.secrets["OPENAI_API_KEY"].strip()
 except (KeyError, AttributeError):
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
 if not openai_api_key:
     st.error("❌ OpenAI API 키가 설정되지 않았습니다. Streamlit secrets 또는 환경변수를 확인해주세요.")
@@ -85,7 +85,7 @@ def load_all_documents(pdf_paths):
             try:
                 loader = PyPDFLoader(str(path))
                 all_docs.extend(loader.load())
-            except Exception as e:
+            except Exception:
                 st.warning(f"'{path.name}' 파일 로드 실패. PDF 인코딩 문제로 생략됩니다.")
         else:
             st.warning(f"'{path.name}' 파일을 찾을 수 없습니다. 경로를 확인해주세요.")
@@ -101,12 +101,13 @@ def create_vector_store(_texts, _embedding_model):
     try:
         return FAISS.from_documents(_texts, _embedding_model)
     except Exception as e:
-        st.error(f"벡터 DB 생성 중 오류 발생: {str(e)}")
+        error_msg = str(e).encode("utf-8", "ignore").decode("utf-8", "ignore")
+        st.error(f"벡터 DB 생성 중 오류 발생: {error_msg}")
         st.stop()
 
 # 질의응답 체인 구성
 @st.cache_resource
-def initialize_qa_chain(k):
+def initialize_qa_chain():
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     full_pdf_paths = [PDF_FILES_DIR / fname for fname in PDF_FILES]
     documents = load_all_documents(full_pdf_paths)
@@ -115,7 +116,7 @@ def initialize_qa_chain(k):
         st.stop()
     text_chunks = split_documents_into_chunks(documents)
     db = create_vector_store(text_chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
@@ -147,13 +148,10 @@ def get_query_expander():
             return query
     return expand
 
-# 사용자 입력: 벡터 검색 문서 수 설정
-k = st.sidebar.slider("🔍 유사문서 검색 개수 (k)", min_value=1, max_value=10, value=6)
-
 # 앱 실행
 try:
     query_expander = get_query_expander()
-    qa_chain = initialize_qa_chain(k)
+    qa_chain = initialize_qa_chain()
 except Exception as e:
     st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
     st.stop()
