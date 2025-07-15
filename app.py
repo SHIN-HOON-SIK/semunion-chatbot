@@ -9,7 +9,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.schema import Document
+from langchain.schema import Document, HumanMessage
 
 # 페이지 설정 (손 모양 로고 사용)
 st.set_page_config(
@@ -140,7 +140,7 @@ def get_query_expander():
             "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n"
             f"질문: {query}\n확장된 질문:"
         )
-        response = llm.invoke(prompt)
+        response = llm.invoke([HumanMessage(content=prompt)])
         return response.content.strip()
     return expand
 
