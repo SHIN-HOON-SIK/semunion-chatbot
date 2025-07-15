@@ -134,10 +134,12 @@ def get_query_expander():
     )
     def expand(query):
         try:
-            # ensure proper encoding for Korean
             query_utf8 = query.encode("utf-8", "ignore").decode("utf-8")
-            prompt = HumanMessage(content=f"다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. 예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'
-질문: {query_utf8}")
+            prompt = HumanMessage(content=(
+                "다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘.\n"
+                "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n"
+                f"질문: {query_utf8}"
+            ))
             response = llm.invoke([prompt])
             return response.content.strip() if hasattr(response, 'content') else response
         except Exception as e:
