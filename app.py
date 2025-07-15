@@ -20,14 +20,12 @@ if sys.platform == "win32":
     sys.stderr.reconfigure(encoding='utf-8')
 
 # ✅ 2. 안전한 유니코드 정리 함수
-
 def safe_unicode(text: str) -> str:
     if not isinstance(text, str):
         text = str(text)
     return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
 
 # ✅ 3. PDF 전체 문자열 클리너 가게 함수
-
 def clean_text(text):
     if not isinstance(text, str):
         return ""
@@ -37,7 +35,6 @@ def clean_text(text):
     return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore").strip()
 
 # ✅ 4. PDF 텍스트 추출
-
 def extract_text_from_pdf(path: Path) -> str:
     try:
         reader = PdfReader(str(path))
@@ -51,7 +48,6 @@ def extract_text_from_pdf(path: Path) -> str:
         return ""
 
 # ✅ 5. 파일 해시
-
 def compute_file_hash(file_paths):
     hash_md5 = hashlib.md5()
     for path in sorted(file_paths):
@@ -61,7 +57,6 @@ def compute_file_hash(file_paths):
     return hash_md5.hexdigest()
 
 # ✅ 6. 문서 로딩
-
 @st.cache_resource
 def load_all_documents_with_hash(pdf_paths, file_hash):
     documents = []
@@ -75,7 +70,6 @@ def load_all_documents_with_hash(pdf_paths, file_hash):
     return documents
 
 # ✅ 7. chunk 분리
-
 @st.cache_resource
 def split_documents_into_chunks(_documents):
     total_length = sum(len(doc.page_content) for doc in _documents)
@@ -92,19 +86,17 @@ def split_documents_into_chunks(_documents):
     return splitter.split_documents(_documents)
 
 # ✅ 8. FAISS 벡터 DB
-
 @st.cache_resource
 def create_vector_store(_chunks, _embedding_model):
     try:
         for doc in _chunks:
             doc.page_content = safe_unicode(doc.page_content)
-        return FAISS.from_documents(_chunks, _embedding_model)
+        return FAISS.from_documents([Document(page_content=safe_unicode(doc.page_content), metadata=doc.metadata) for doc in _chunks], _embedding_model)
     except Exception as e:
         st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
         st.stop()
 
 # ✅ 9. QA 체인
-
 @st.cache_resource
 def initialize_qa_chain(pdf_paths):
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
@@ -120,7 +112,6 @@ def initialize_qa_chain(pdf_paths):
     return RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True)
 
 # ✅ 10. 질문 확장
-
 @st.cache_resource
 def get_query_expander():
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
@@ -139,7 +130,6 @@ def get_query_expander():
     return expand
 
 # ✅ 11. OpenAI 키 설정
-
 openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
 if not openai_api_key:
     try:
@@ -149,7 +139,6 @@ if not openai_api_key:
         st.stop()
 
 # ✅ 12. Streamlit UI
-
 st.set_page_config(page_title="삼성전기 존중노조 상담사", layout="centered", page_icon="🤖")
 st.title("🤖 삼성전기 존중노조 상담사")
 st.write("PDF 문서 기반 질문에 대해 GPT가 답변해 드립니다.")
