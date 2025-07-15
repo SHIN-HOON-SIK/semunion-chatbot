@@ -156,7 +156,7 @@ def initialize_qa_chain():
         return_source_documents=True
     )
 
-# 질문 보정용 확장 함수
+# ✅ 질문 보정용 확장 함수 - 강화된 프롬프트 적용
 @st.cache_resource
 def get_query_expander():
     llm = ChatOpenAI(
@@ -167,9 +167,9 @@ def get_query_expander():
     def expand(query):
         try:
             prompt_text = (
-                "다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. "
-                "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'. "
-                f"질문: {query}"
+                "사용자의 질문을 PDF 내용과 잘 매칭될 수 있도록 주요 키워드를 포함한 구체적이고 명확한 문장으로 바꿔줘. "
+                "PDF 내 자주 등장하는 표현과 용어를 반영해서 검색 성공률을 높여줘. 부연 설명이 필요하면 덧붙여도 좋아."
+                f" 질문: {query}"
             )
             prompt = HumanMessage(content=prompt_text)
             response = llm.invoke([prompt])
