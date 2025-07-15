@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 import streamlit as st
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import UnstructuredPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -82,7 +82,7 @@ def load_all_documents(pdf_paths):
     for path in pdf_paths:
         if path.exists():
             try:
-                loader = PyPDFLoader(str(path))
+                loader = UnstructuredPDFLoader(str(path))
                 all_docs.extend(loader.load())
             except Exception as e:
                 st.warning(f"'{path.name}' 파일을 로드하는 중 오류 발생: {e}")
