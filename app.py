@@ -58,7 +58,7 @@ BASE_DIR = Path(__file__).parent
 PDF_FILES_DIR = BASE_DIR / "data"
 PDF_FILES = [
     "policy_agenda_250627.pdf",
-    "union_meeting_250704.pdf"
+    "union_meeting_250704.pdf",
     "SEMUNION_DATA_BASE.pdf"
 ]
 
@@ -132,7 +132,7 @@ except Exception as e:
 
 query = st.text_input(
     "[무엇이든 물어보세요.]",
-    placeholder="여기에 질문을 입력해 주세요.",
+    placeholder="예: 7월 정기협의 주요 의제는 무엇인가요?",
     key="query_input"
 )
 
