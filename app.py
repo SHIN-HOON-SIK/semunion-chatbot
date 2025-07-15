@@ -9,7 +9,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.schema import Document, HumanMessage, AIMessage
+from langchain.schema import Document, HumanMessage
 
 # 페이지 설정
 st.set_page_config(
@@ -134,12 +134,7 @@ def get_query_expander():
     )
     def expand(query):
         try:
-            message_text = (
-                "다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘.\n"
-                "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n"
-                "질문: {}".format(query)
-            )
-            prompt = HumanMessage(content=message_text)
+            prompt = HumanMessage(content=f"다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. 예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n질문: {query}")
             response = llm.invoke([prompt])
             return response.content.strip() if hasattr(response, 'content') else response
         except Exception as e:
