@@ -94,11 +94,11 @@ def split_documents_into_chunks(_documents):
 # ✅ 8. FAISS 벡터 DB
 
 @st.cache_resource
-def create_vector_store(_chunks, embedding_model):
+def create_vector_store(_chunks, _embedding_model):
     try:
         for doc in _chunks:
             doc.page_content = safe_unicode(doc.page_content)
-        return FAISS.from_documents(_chunks, embedding_model)
+        return FAISS.from_documents(_chunks, _embedding_model)
     except Exception as e:
         st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {e}")
         st.stop()
