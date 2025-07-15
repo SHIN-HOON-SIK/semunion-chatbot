@@ -9,9 +9,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.schema import Document, HumanMessage
+from langchain.schema import Document, HumanMessage, AIMessage
 
-# 페이지 설정 (손 모양 로고 사용)
+# 페이지 설정
 st.set_page_config(
     page_title="삼성전기 존중노동조합 상담사",
     layout="centered",
@@ -63,7 +63,7 @@ PDF_FILES = [
     "SEMUNION_DATA_BASE.pdf"
 ]
 
-# UI 구성 (로고와 제목을 중앙 정렬)
+# UI 구성
 st.markdown(
     """
     <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
@@ -130,18 +130,18 @@ def get_query_expander():
     llm = ChatOpenAI(
         openai_api_key=openai_api_key,
         model_name="gpt-4o",
-        temperature=0,
-        http_headers={"User-Agent": "Mozilla/5.0"}
+        temperature=0
     )
     def expand(query):
-        prompt = (
-            "다음 사용자의 질문을 가능한 한 명확하고 자세한 문장으로 확장해줘. "
-            "단어만 있는 경우 전체 문장으로 바꾸고, 배경 맥락이 부족한 경우 보완해줘.\n"
-            "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n"
-            f"질문: {query}\n확장된 질문:"
+        prompt = HumanMessage(
+            content=(
+                "다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘.\n"
+                "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n"
+                f"질문: {query}"
+            )
         )
-        response = llm.invoke([HumanMessage(content=prompt)])
-        return response.content.strip()
+        response = llm.invoke([prompt])
+        return response.content.strip() if hasattr(response, 'content') else response
     return expand
 
 # 앱 실행
