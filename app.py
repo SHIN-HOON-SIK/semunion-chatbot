@@ -10,36 +10,33 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 
-# 페이지 설정 및 전체 배경 흰색으로
+# 페이지 설정
 st.set_page_config(page_title="삼성전기 존중노동조합 상담사", layout="centered")
+
+# 전체 배경 흰색 및 스타일 설정
 st.markdown("""
-    <style>
-        .stApp { background-color: white !important; }
-        .footer-left {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            font-size: 12px;
-            color: #555;
-            line-height: 1.5;
-            z-index: 100;
-        }
-    </style>
-    <div class="footer-left">
-        수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
-        사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
-        이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
-    </div>
+<style>
+    .stApp {
+        background-color: white !important;
+    }
+    .footer-left {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        font-size: 12px;
+        color: #555;
+        line-height: 1.5;
+        z-index: 100;
+    }
+</style>
+<div class="footer-left">
+    수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
+    사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
+    이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
+</div>
 """, unsafe_allow_html=True)
 
-# 상단 이미지와 안내 문구
-st.image("1.png", width=300)
-st.markdown("""
-    <h1 style='display:inline-block; vertical-align:middle; margin-left:10px; color: #0d1a44;'>삼성전기 존중노동조합 상담사</h1>
-    <p>안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다.<br>아래에 질문을 입력해 주세요.</p>
-""", unsafe_allow_html=True)
-
-# OpenAI API 키 설정
+# OpenAI API 키
 try:
     openai_api_key = st.secrets["OPENAI_API_KEY"]
 except (KeyError, AttributeError):
@@ -49,15 +46,19 @@ if not openai_api_key:
     st.error("❌ OpenAI API 키가 설정되지 않았습니다. Streamlit secrets 또는 환경변수를 확인해주세요.")
     st.stop()
 
-# PDF 문서 경로 설정
+# 문서 경로 및 파일명
 BASE_DIR = Path(__file__).parent
 PDF_FILES_DIR = BASE_DIR / "data"
-PDF_FILES = [
-    "policy_agenda_250627.pdf",
-    "union_meeting_250704.pdf"
-]
+PDF_FILES = ["policy_agenda_250627.pdf", "union_meeting_250704.pdf"]
 
-# 문서 처리 함수
+# 화면 구성
+st.image("1.png", width=300)
+st.markdown("""
+<h1 style='color:#0d1a44;'>삼성전기 존중노동조합 상담사</h1>
+안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해주세요.
+""", unsafe_allow_html=True)
+
+# 문서 처리 함수들
 @st.cache_resource
 def load_all_documents(pdf_paths):
     all_docs = []
@@ -97,22 +98,17 @@ def initialize_qa_chain():
     db = create_vector_store(text_chunks, embeddings)
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 3})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
-    return RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever,
-        return_source_documents=True
-    )
+    return RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
 
-# QA 체인 초기화
+# 챗봇 체인 초기화
 try:
     qa_chain = initialize_qa_chain()
 except Exception as e:
     st.error(f"챗봇 초기화 중 오류 발생: {e}")
     st.stop()
 
-# 사용자 질문 입력
-query = st.text_input("[무엇이든 물어보세요.]", placeholder="여기에 질문을 입력해 주세요", key="query_input")
+# 사용자 입력
+query = st.text_input("[무엇이든 물어보세요.]", placeholder="예: 7월 정기협의 주요 의제는 무엇인가요?", key="query_input")
 
 if query:
     with st.spinner("답변을 생성하고 있습니다... 잠시만 기다려주세요."):
@@ -120,8 +116,10 @@ if query:
             result = qa_chain.invoke({"query": query})
             answer_text = result["result"]
 
-            if not answer_text or ("정보" in answer_text and "없" in answer_text):
-                st.info("❕ 죄송하지만, 집행부가 업로드 한 자료에는 해당 내용이 포함되어 있지 않습니다. 빠른 업데이트하겠습니다.")
+            if not answer_text or (
+                any(kw in answer_text for kw in ["정보", "내용", "없", "알 수"]) and len(answer_text) < 100
+            ):
+                st.info("❕ 죄송하지만 집행부가 업로드 한 자료에는 해당 내용이 포함되어 있지 않습니다. 빠른 업데이트하겠습니다.")
             else:
                 st.success(answer_text)
 
@@ -133,6 +131,5 @@ if query:
                     st.markdown(f"**문서 {i+1}:** `{source_name}` (페이지: {page_number})")
                     st.write(f'\"{doc.page_content.strip()[:500]}...\"')
                     st.markdown("---")
-
         except Exception as e:
             st.error(f"❌ 답변 생성 중 오류 발생: {e}")
