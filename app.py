@@ -100,7 +100,7 @@ def create_vector_store(_texts, _embedding_model):
     try:
         return FAISS.from_documents(_texts, _embedding_model)
     except Exception as e:
-        st.error(f"벡터 DB 생성 중 오류 발생: {str(e)}")
+        st.error(f"벡터 DB 생성 중 오류 발생: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
         st.stop()
 
 # 질의응답 체인 구성
@@ -127,7 +127,7 @@ def initialize_qa_chain():
 try:
     qa_chain = initialize_qa_chain()
 except Exception as e:
-    st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
+    st.error(f"챗봇 초기화 중 오류 발생: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
     st.stop()
 
 query = st.text_input(
@@ -153,8 +153,13 @@ if query:
                     page = doc.metadata.get('page')
                     page_number = page + 1 if isinstance(page, int) else "알 수 없음"
                     st.markdown(f"**문서 {i+1}:** `{source_name}` (페이지: {page_number})")
-                    content = doc.page_content.strip().replace("\u0000", "")[:500]
-                    st.write(content + "...")
+                    try:
+                        raw = doc.page_content.strip().replace("\u0000", "")[:500]
+                        content = raw.encode('utf-8', 'ignore').decode('utf-8')
+                        st.write(content + "...")
+                    except Exception as e:
+                        st.warning(f"📎 문서 내용을 표시하는 중 오류 발생: {str(e)}")
                     st.markdown("---")
         except Exception as e:
-            st.error(f"❌ 답변 생성 중 오류 발생: {str(e)}")
+            error_text = str(e).encode("utf-8", "ignore").decode("utf-8")
+            st.error(f"❌ 답변 생성 중 오류 발생: {error_text}")
