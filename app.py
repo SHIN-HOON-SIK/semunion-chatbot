@@ -153,8 +153,8 @@ if not openai_api_key:
 
 # ✅ 12. Streamlit UI
 
-st.set_page_config(page_title="삼성전기 존중노조 상담사", layout="centered", page_icon="🤖")
-st.title("🤖 삼성전기 존중노조 상담사")
+st.set_page_config(page_title="삼성전기 존중노조 상담사", layout="centered", page_icon="logo_union_hands.png")
+st.title("📘 삼성전기 존중노조 상담사")
 st.write("PDF 문서 기반 질문에 대해 GPT가 답변해 드립니다.")
 
 base_dir = Path(__file__).parent
