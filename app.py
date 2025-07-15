@@ -4,12 +4,13 @@
 import os
 from pathlib import Path
 import streamlit as st
-from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.schema import HumanMessage
+from PyPDF2 import PdfReader
+from langchain.schema import Document
 
 # 페이지 설정
 st.set_page_config(
@@ -76,17 +77,31 @@ st.markdown(
 
 st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
+# PDF 전처리 텍스트 추출 함수
+def extract_text_from_pdf(path):
+    try:
+        reader = PdfReader(str(path))
+        text = "\n".join([
+            page.extract_text() or "" for page in reader.pages
+        ])
+        cleaned_text = text.encode("utf-8", "ignore").decode("utf-8", "ignore")
+        return cleaned_text
+    except Exception as e:
+        st.warning(f"'{path.name}' 텍스트 추출 실패: {e}")
+        return None
+
 # 문서 로딩 및 처리 함수
 @st.cache_resource
 def load_all_documents(pdf_paths):
     all_docs = []
     for path in pdf_paths:
         if path.exists():
-            try:
-                loader = PyPDFLoader(str(path))
-                all_docs.extend(loader.load())
-            except Exception:
-                st.warning(f"'{path.name}' 파일 로드 실패. PDF 인코딩 문제로 생략됩니다.")
+            text = extract_text_from_pdf(path)
+            if text:
+                doc = Document(page_content=text, metadata={"source": str(path.name)})
+                all_docs.append(doc)
+            else:
+                st.warning(f"'{path.name}' 텍스트가 비어있어 생략됩니다.")
         else:
             st.warning(f"'{path.name}' 파일을 찾을 수 없습니다. 경로를 확인해주세요.")
     return all_docs
