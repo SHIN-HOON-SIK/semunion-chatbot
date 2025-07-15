@@ -147,13 +147,11 @@ def get_query_expander():
             return query
     return expand
 
-# 유사 문서 검색 개수 조절
-k_value = st.sidebar.number_input("🔍 유사문서 검색 개수 (k)", min_value=1, max_value=20, value=6)
-
 # 앱 실행
 try:
-    qa_chain = initialize_qa_chain(k_value)
+    default_k = 6
     query_expander = get_query_expander()
+    qa_chain = initialize_qa_chain(default_k)
 except Exception as e:
     st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
     st.stop()
