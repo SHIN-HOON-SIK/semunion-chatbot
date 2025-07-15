@@ -9,7 +9,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.schema import Document, HumanMessage
+from langchain.schema import HumanMessage
 
 # 페이지 설정
 st.set_page_config(
@@ -101,8 +101,7 @@ def create_vector_store(_texts, _embedding_model):
     try:
         return FAISS.from_documents(_texts, _embedding_model)
     except Exception as e:
-        error_msg = str(e)
-        st.error(f"벡터 DB 생성 중 오류 발생: {error_msg}")
+        st.error(f"벡터 DB 생성 중 오류 발생: {str(e)}")
         st.stop()
 
 # 질의응답 체인 구성
@@ -135,13 +134,16 @@ def get_query_expander():
     )
     def expand(query):
         try:
-            prompt = HumanMessage(content=(
-                "다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. 예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'. 질문: " + query
-            ))
+            prompt_text = (
+                "다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. "
+                "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'. "
+                f"질문: {query}"
+            )
+            prompt = HumanMessage(content=prompt_text)
             response = llm.invoke([prompt])
-            return response.content.strip() if hasattr(response, 'content') else response
+            return response.content.strip() if hasattr(response, 'content') else str(response)
         except Exception as e:
-            st.warning("❕ 질문 확장 중 오류 발생: {}".format(str(e)))
+            st.warning(f"❕ 질문 확장 중 오류 발생: {str(e)}")
             return query
     return expand
 
@@ -186,5 +188,4 @@ if query:
                         st.warning(f"📎 문서 내용을 표시하는 중 오류 발생: {str(e)}")
                     st.markdown("---")
         except Exception as e:
-            error_text = str(e)
-            st.error(f"❌ 답변 생성 중 오류 발생: {error_text}")
+            st.error(f"❌ 답변 생성 중 오류 발생: {str(e)}")
