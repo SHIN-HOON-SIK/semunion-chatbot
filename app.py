@@ -61,12 +61,16 @@ PDF_FILES = [
     "union_meeting_250704.pdf"
 ]
 
-# UI 구성
-col1, col2 = st.columns([1, 8])
-with col1:
-    st.image("logo_union_hands.png", width=60)
-with col2:
-    st.markdown("<h1 style='color: #0d1a44; margin-top: 12px;'>삼성전기 존중노동조합 상담사</h1>", unsafe_allow_html=True)
+# UI 구성 (로고와 제목을 중앙 정렬)
+st.markdown(
+    """
+    <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
+        <img src="https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/logo_union_hands.png" width="50"/>
+        <h1 style='color: #0d1a44; margin: 0;'>삼성전기 존중노동조합 상담사</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
