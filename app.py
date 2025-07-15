@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+import re
 import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -77,6 +78,13 @@ st.markdown(
 
 st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반하여 노조 및 회사 관련 질문에 답변해 드립니다. 아래에 질문을 입력해 주세요.")
 
+# 텍스트 전처리 함수
+
+def clean_text(text):
+    text = text.replace("\x00", "")
+    text = re.sub(r"[\u0000-\u001F\u007F-\u009F]", "", text)
+    return text.encode("utf-8", "ignore").decode("utf-8", "ignore")
+
 # PDF 전처리 텍스트 추출 함수
 def extract_text_from_pdf(path):
     try:
@@ -84,7 +92,7 @@ def extract_text_from_pdf(path):
         text = "\n".join([
             page.extract_text() or "" for page in reader.pages
         ])
-        cleaned_text = text.encode("utf-8", "ignore").decode("utf-8", "ignore")
+        cleaned_text = clean_text(text)
         return cleaned_text
     except Exception as e:
         st.warning(f"'{path.name}' 텍스트 추출 실패: {e}")
@@ -176,6 +184,7 @@ raw_query = st.text_input(
     key="query_input"
 )
 
+raw_query = raw_query.strip() if raw_query else ""
 query = query_expander(raw_query) if raw_query else ""
 
 if query:
