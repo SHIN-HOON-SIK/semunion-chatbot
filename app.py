@@ -106,7 +106,7 @@ def create_vector_store(_texts, _embedding_model):
 
 # 질의응답 체인 구성
 @st.cache_resource
-def initialize_qa_chain():
+def initialize_qa_chain(k):
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     full_pdf_paths = [PDF_FILES_DIR / fname for fname in PDF_FILES]
     documents = load_all_documents(full_pdf_paths)
@@ -115,7 +115,7 @@ def initialize_qa_chain():
         st.stop()
     text_chunks = split_documents_into_chunks(documents)
     db = create_vector_store(text_chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
@@ -147,9 +147,12 @@ def get_query_expander():
             return query
     return expand
 
+# 유사 문서 검색 개수 조절
+k_value = st.sidebar.number_input("🔍 유사문서 검색 개수 (k)", min_value=1, max_value=20, value=1)
+
 # 앱 실행
 try:
-    qa_chain = initialize_qa_chain()
+    qa_chain = initialize_qa_chain(k_value)
     query_expander = get_query_expander()
 except Exception as e:
     st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
