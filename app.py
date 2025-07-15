@@ -20,7 +20,21 @@ st.markdown(
         .stApp {
             background-color: white !important;
         }
+        .footer-left {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: #555;
+            line-height: 1.5;
+            z-index: 100;
+        }
     </style>
+    <div class="footer-left">
+        수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
+        사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
+        이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
+    </div>
     """,
     unsafe_allow_html=True
 )
