@@ -36,7 +36,7 @@ st.markdown(
     </style>
     <div class="footer-left">
         수원시 영통구 매영로 159번길 19, 광교 더 퍼스트 지식산업센터<br>
-        사업자등록번호: 133-82-71927 ｜ 위원장: 신훈식 ｜ 대표번호: 010-9496-6517<br>
+        사업자등록번호: 133-82-71927 ｜ 대표: 신훈식 ｜ 대표번호: 010-9496-6517<br>
         이메일: <a href="mailto:hoonsik79@hanmail.net">hoonsik79@hanmail.net</a>
     </div>
     """,
@@ -92,7 +92,7 @@ def load_all_documents(pdf_paths):
 
 @st.cache_resource
 def split_documents_into_chunks(_documents):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     return text_splitter.split_documents(_documents)
 
 @st.cache_resource
@@ -114,7 +114,7 @@ def initialize_qa_chain():
         st.stop()
     text_chunks = split_documents_into_chunks(documents)
     db = create_vector_store(text_chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 3})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
