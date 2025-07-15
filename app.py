@@ -11,18 +11,6 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
 
-from pdf2image import convert_from_path
-import pytesseract
-
-# OCR 기반 텍스트 추출 함수
-def extract_text_with_ocr(pdf_path):
-    images = convert_from_path(pdf_path)
-    full_text = ""
-    for img in images:
-        text = pytesseract.image_to_string(img, lang='kor+eng')
-        full_text += text + "\n\n"
-    return full_text
-
 # 페이지 설정 (손 모양 로고 사용)
 st.set_page_config(
     page_title="삼성전기 존중노동조합 상담사",
@@ -98,9 +86,7 @@ def load_all_documents(pdf_paths):
                 loader = PyPDFLoader(str(path))
                 all_docs.extend(loader.load())
             except Exception as e:
-                st.warning(f"'{path.name}' 파일 로드 실패. OCR로 재시도 중...")
-                ocr_text = extract_text_with_ocr(str(path))
-                all_docs.append(Document(page_content=ocr_text))
+                st.warning(f"'{path.name}' 파일 로드 실패. PDF 인코딩 문제로 생략됩니다.")
         else:
             st.warning(f"'{path.name}' 파일을 찾을 수 없습니다. 경로를 확인해주세요.")
     return all_docs
