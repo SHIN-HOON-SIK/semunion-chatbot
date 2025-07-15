@@ -127,7 +127,12 @@ def initialize_qa_chain():
 # 질문 보정용 확장 함수
 @st.cache_resource
 def get_query_expander():
-    llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
+    llm = ChatOpenAI(
+        openai_api_key=openai_api_key,
+        model_name="gpt-4o",
+        temperature=0,
+        http_headers={"User-Agent": "Mozilla/5.0"}
+    )
     def expand(query):
         prompt = (
             "다음 사용자의 질문을 가능한 한 명확하고 자세한 문장으로 확장해줘. "
@@ -135,7 +140,6 @@ def get_query_expander():
             "예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n"
             f"질문: {query}\n확장된 질문:"
         )
-        prompt = prompt.encode("utf-8", "ignore").decode("utf-8")
         response = llm.invoke(prompt)
         return response.content.strip()
     return expand
