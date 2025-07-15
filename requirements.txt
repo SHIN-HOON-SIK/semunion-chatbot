@@ -4,4 +4,4 @@ langchain-community
 langchain-openai
 openai
 faiss-cpu
-unstructured   ← ✅ 이 줄을 꼭 추가
+unstructured   
