@@ -77,9 +77,9 @@ def load_all_documents_with_hash(pdf_paths, file_hash):
 # ✅ 7. chunk 분리
 
 @st.cache_resource
-def split_documents_into_chunks(documents):
-    total_length = sum(len(doc.page_content) for doc in documents)
-    avg_length = total_length // len(documents) if documents else 0
+def split_documents_into_chunks(_documents):
+    total_length = sum(len(doc.page_content) for doc in _documents)
+    avg_length = total_length // len(_documents) if _documents else 0
 
     if avg_length > 6000:
         chunk_size, overlap = 1500, 300
@@ -89,7 +89,7 @@ def split_documents_into_chunks(documents):
         chunk_size, overlap = 700, 100
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=overlap)
-    return splitter.split_documents(documents)
+    return splitter.split_documents(_documents)
 
 # ✅ 8. FAISS 벡터 DB
 
