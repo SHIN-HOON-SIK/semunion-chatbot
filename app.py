@@ -125,7 +125,8 @@ def load_all_documents(pdf_paths):
 
 @st.cache_resource
 def split_documents_into_chunks(_documents):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+    # 추후 사용자 조절 가능하도록 구조 개선
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     return text_splitter.split_documents(_documents)
 
 @st.cache_resource
