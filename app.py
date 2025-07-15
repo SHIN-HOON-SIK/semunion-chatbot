@@ -83,17 +83,20 @@ st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반
 def clean_text(text):
     text = text.replace("\x00", "")
     text = re.sub(r"[\u0000-\u001F\u007F-\u009F]", "", text)
+    text = re.sub(r"\\ud[0-9a-fA-F]{3}", "", text)  # 유니코드 surrogate 제거
     return text.encode("utf-8", "ignore").decode("utf-8", "ignore")
 
 # PDF 전처리 텍스트 추출 함수
+
 def extract_text_from_pdf(path):
     try:
         reader = PdfReader(str(path))
-        text = "\n".join([
-            page.extract_text() or "" for page in reader.pages
-        ])
-        cleaned_text = clean_text(text)
-        return cleaned_text
+        cleaned_pages = []
+        for page in reader.pages:
+            raw = page.extract_text() or ""
+            cleaned = clean_text(raw)
+            cleaned_pages.append(cleaned)
+        return "\n".join(cleaned_pages)
     except Exception as e:
         st.warning(f"'{path.name}' 텍스트 추출 실패: {e}")
         return None
