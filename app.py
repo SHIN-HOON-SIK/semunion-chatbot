@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import hashlib
+import sys
 import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -13,12 +14,24 @@ from langchain.chains import RetrievalQA
 from langchain.schema import HumanMessage
 from langchain.schema import Document
 
+# Windows 환경에서 stdout 인코딩 문제 방지
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 # PyPDF2 안전하게 import
 try:
     from PyPDF2 import PdfReader
 except ImportError as e:
     st.error("❌ PyPDF2 모듈을 찾을 수 없습니다. requirements.txt 파일에 'PyPDF2'를 추가하거나 설치해 주세요.")
     st.stop()
+
+# 안전한 유니코드 디코딩 함수
+
+def safe_unicode(text: str) -> str:
+    if not isinstance(text, str):
+        text = str(text)
+    return text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
 
 # 페이지 설정
 st.set_page_config(
@@ -196,10 +209,9 @@ def get_query_expander():
                 "PDF 내 자주 등장하는 표현과 용어를 반영해서 검색 성공률을 높여줘. 부연 설명이 필요하면 덧붙여도 좋아."
                 f" 질문: {query}"
             )
-            # st.write("DEBUG | prompt_text:", prompt_text)
-            prompt = HumanMessage(content=prompt_text)
+            prompt = HumanMessage(content=safe_unicode(prompt_text))
             response = llm.invoke([prompt])
-            return response.content.strip() if hasattr(response, 'content') else str(response)
+            return safe_unicode(response.content.strip()) if hasattr(response, 'content') else str(response)
         except Exception as e:
             st.warning(f"❕ 질문 확장 중 오류 발생: {e!r}")
             return query
@@ -226,12 +238,12 @@ if query:
     with st.spinner("답변을 생성하고 있습니다... 잠시만 기다려주세요."):
         try:
             result = qa_chain.invoke({"query": query})
-            answer_text = result["result"]
+            safe_answer_text = safe_unicode(result["result"])
 
-            if not answer_text or ("정보" in answer_text and "없" in answer_text):
+            if not safe_answer_text or ("정보" in safe_answer_text and "없" in safe_answer_text):
                 st.info("죄송하지만 집행부가 업로드 한 자료에는 해당 내용이 포함되어 있지 않습니다. 빠른 업데이트하겠습니다.")
             else:
-                st.success(answer_text)
+                st.success(safe_answer_text)
 
             with st.expander("📄 답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
@@ -241,7 +253,7 @@ if query:
                     st.markdown(f"**문서 {i+1}:** `{source_name}` (페이지: {page_number})")
                     try:
                         raw = doc.page_content.strip().replace("\u0000", "")[:500]
-                        content = raw.encode('utf-8', 'ignore').decode('utf-8')
+                        content = safe_unicode(raw)
                         st.write(content + "...")
                     except Exception as e:
                         st.warning(f"📎 문서 내용을 표시하는 중 오류 발생: {str(e)}")
