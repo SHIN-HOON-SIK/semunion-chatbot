@@ -101,7 +101,7 @@ def create_vector_store(_texts, _embedding_model):
     try:
         return FAISS.from_documents(_texts, _embedding_model)
     except Exception as e:
-        st.error(f"벡터 DB 생성 중 오류 발생: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
+        st.error(f"벡터 DB 생성 중 오류 발생: {str(e)}")
         st.stop()
 
 # 질의응답 체인 구성
@@ -134,7 +134,10 @@ def get_query_expander():
     )
     def expand(query):
         try:
-            prompt = HumanMessage(content=f"다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. 예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'\n질문: {query}")
+            # ensure proper encoding for Korean
+            query_utf8 = query.encode("utf-8", "ignore").decode("utf-8")
+            prompt = HumanMessage(content=f"다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. 예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'
+질문: {query_utf8}")
             response = llm.invoke([prompt])
             return response.content.strip() if hasattr(response, 'content') else response
         except Exception as e:
@@ -147,7 +150,7 @@ try:
     qa_chain = initialize_qa_chain()
     query_expander = get_query_expander()
 except Exception as e:
-    st.error(f"챗봇 초기화 중 오류 발생: {str(e).encode('utf-8', 'ignore').decode('utf-8')}")
+    st.error(f"챗봇 초기화 중 오류 발생: {str(e)}")
     st.stop()
 
 raw_query = st.text_input(
@@ -183,5 +186,5 @@ if query:
                         st.warning(f"📎 문서 내용을 표시하는 중 오류 발생: {str(e)}")
                     st.markdown("---")
         except Exception as e:
-            error_text = str(e).encode("utf-8", "ignore").decode("utf-8")
+            error_text = str(e)
             st.error(f"❌ 답변 생성 중 오류 발생: {error_text}")
