@@ -125,8 +125,20 @@ def load_all_documents(pdf_paths):
 
 @st.cache_resource
 def split_documents_into_chunks(_documents):
-    # 추후 사용자 조절 가능하도록 구조 개선
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    total_length = sum(len(doc.page_content) for doc in _documents)
+    avg_length = total_length // len(_documents) if _documents else 0
+
+    if avg_length > 6000:
+        chunk_size, chunk_overlap = 1500, 300
+    elif avg_length > 3000:
+        chunk_size, chunk_overlap = 1000, 200
+    else:
+        chunk_size, chunk_overlap = 700, 100
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap
+    )
     return text_splitter.split_documents(_documents)
 
 @st.cache_resource
