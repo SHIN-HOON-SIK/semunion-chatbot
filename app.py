@@ -150,7 +150,7 @@ def initialize_qa_chain(all_paths, api_key):
     
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, faiss_retriever],
-        weights=[0.6, 0.4]
+        weights=[0.7, 0.3]
     )
 
     # --- 다중 질문 생성 기능 (안정적인 기본 버전 사용) ---
