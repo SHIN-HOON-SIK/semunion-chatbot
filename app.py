@@ -87,12 +87,12 @@ def split_documents_into_chunks(_documents):
     elif avg_length > 3000:
         chunk_size, overlap = 1000, 200
     else:
-        chunk_size, overlap = 700, 100
+        chunk_size, overlap = 700, 200  # ← 오버랩 강화
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=overlap)
     return splitter.split_documents(_documents)
 
-# ✅ 8. FAISS 베터 DB
+# ✅ 8. FAISS 벡터 DB
 
 @st.cache_resource
 def create_vector_store(_chunks, _embedding_model):
@@ -104,7 +104,7 @@ def create_vector_store(_chunks, _embedding_model):
             _embedding_model
         )
     except Exception as e:
-        st.error(f"❌ FAISS 베터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
+        st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
         st.stop()
 
 # ✅ 9. 사용자 정의 프롬프트로 LLM 추론 제한
@@ -131,7 +131,7 @@ def initialize_qa_chain(pdf_paths):
         st.stop()
     chunks = split_documents_into_chunks(docs)
     db = create_vector_store(chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 15})  # ← k=15로 강화
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
@@ -149,8 +149,9 @@ def get_query_expander():
     def expand(query: str) -> str:
         try:
             prompt = HumanMessage(content=safe_unicode(
-                "사용자의 질문을 PDF 내용과 잘 매칭되도록 구체적이고 명확한 문장으로 바꿔줘."
-                f" 질문: {query}"
+                "다음 단어 또는 문장을 PDF 검색에 최적화되도록 바꿔줘. "
+                "가능하다면 PDF 내 자주 나오는 표현이나 문장 형태로 재작성하고, 문맥이 애매하면 보완 설명도 포함해줘. "
+                f"질문: {query}"
             ))
             response = llm.invoke([prompt])
             return safe_unicode(response.content.strip())
