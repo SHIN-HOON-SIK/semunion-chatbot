@@ -12,6 +12,7 @@ from pptx import Presentation
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import BM25Retriever
 from langchain.schema import Document, HumanMessage
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
@@ -118,8 +119,11 @@ def initialize_qa_chain(all_paths):
         st.error("문서를 불러오지 못했습니다.")
         st.stop()
     chunks = split_documents_into_chunks(docs)
-    db = create_vector_store(chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 20})
+    # ✅ BM25 하이브리드
+    bm25 = BM25Retriever.from_documents(chunks)
+    bm25.k = 5
+    faiss = create_vector_store(chunks, embeddings).as_retriever(search_type="similarity", search_kwargs={"k": 15})
+    retriever = bm25 | faiss
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
