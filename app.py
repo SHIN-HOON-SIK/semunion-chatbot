@@ -119,7 +119,7 @@ def initialize_qa_chain(all_paths):
         st.stop()
     chunks = split_documents_into_chunks(docs)
     db = create_vector_store(chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 15})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 20})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
