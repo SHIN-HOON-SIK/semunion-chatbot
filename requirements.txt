@@ -6,3 +6,4 @@ openai
 faiss-cpu
 unstructured   
 PyPDF2
+python-pptx
