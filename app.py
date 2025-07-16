@@ -14,7 +14,7 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
-from langchain.schema import Document
+from langchain.schema import Document, HumanMessage
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
@@ -161,6 +161,26 @@ def initialize_qa_chain(all_paths, api_key):
         return_source_documents=True
     )
 
+@st.cache_resource
+def get_query_expander(api_key):
+    """사용자 질문에 '노조' 관련 문맥을 추가하여 구체화하는 함수"""
+    llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
+    def expand(query: str) -> str:
+        # 한두 단어의 짧은 키워드에 대해서만 실행
+        if len(query.split()) <= 2:
+            try:
+                # 프롬프트를 더 구체적으로 수정
+                prompt_text = f"'{query}'이라는 키워드를 '노동조합'과 관련된 질문으로 바꿔줘. 예를 들어 '집행부'는 '노조 집행부'로, '휴가'는 '노조 휴가 규정'처럼 구체화해줘."
+                prompt = HumanMessage(content=prompt_text)
+                response = llm.invoke([prompt])
+                return response.content.strip().strip("'\"")
+            except Exception as e:
+                st.warning(f"❕ 질문 확장 실패: {e}")
+                return query
+        return query
+    return expand
+
+
 # --------------------------------------------------------------------------
 # [3. Streamlit 앱 실행 부분]
 # --------------------------------------------------------------------------
@@ -190,8 +210,9 @@ data_dir = base_dir / "data"
 doc_files = ["policy_agenda_250627.pdf", "union_meeting_250704.pdf", "SEMUNION_DATA_BASE.pdf", "SEMUNION_DATA_BASE.pptx"]
 doc_paths = [data_dir / name for name in doc_files if (data_dir / name).exists()]
 
-# [QA 체인 초기화]
+# [QA 체인 및 질문 확장 기능 초기화]
 try:
+    query_expander = get_query_expander(api_key=openai_api_key)
     qa_chain = initialize_qa_chain(all_paths=doc_paths, api_key=openai_api_key)
 except Exception as e:
     st.error(f"⚠️ 앱 초기화 중 오류가 발생했습니다: {e}")
@@ -201,10 +222,13 @@ except Exception as e:
 user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
 
 if user_query.strip():
-    # 질문 확장 기능을 사용하지 않고, 사용자 입력을 그대로 검색
+    # 질문 확장 기능을 다시 사용
+    expanded_query = query_expander(user_query)
+    
     with st.spinner("답변 생성 중..."):
         try:
-            result = qa_chain.invoke({"query": user_query})
+            # 확장된 질문(expanded_query)으로 검색을 수행
+            result = qa_chain.invoke({"query": expanded_query})
             answer = result["result"]
             
             if not answer or "문서에 해당 정보가 없습니다" in answer:
