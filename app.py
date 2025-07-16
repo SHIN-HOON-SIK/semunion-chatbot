@@ -140,7 +140,8 @@ def get_query_expander():
         try:
             prompt = HumanMessage(content=safe_unicode(
                 "다음 단어 또는 문장을 PDF 검색에 최적화되도록 바꿔줘. "
-                "가능하다면 PDF 내 자주 나오는 표현이나 문장 형태로 재작성하고, 문맥이 애매하면 보완 설명도 포함해줘. "
+                "가능하면 PDF에서 직접적으로 등장할 법한 표현이나 구성으로 재작성해줘. "
+                "단어가 짧더라도 키워드 매칭을 최우선으로 하고, 부연 설명이 필요하면 덧붙여도 좋아. "
                 f"질문: {query}"
             ))
             response = llm.invoke([prompt])
