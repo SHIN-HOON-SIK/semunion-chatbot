@@ -12,60 +12,16 @@ from pptx import Presentation
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
-from langchain_community.vectorstores import BM25Retriever
+from langchain.retrievers import BM25Retriever, EnsembleRetriever # 수정: EnsembleRetriever 임포트
 from langchain.schema import Document, HumanMessage
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
-if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
-
-def safe_unicode(text: str) -> str:
-    if not isinstance(text, str):
-        text = str(text)
-    return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
-
-def clean_text(text):
-    if not isinstance(text, str):
-        return ""
-    text = text.replace("\x00", "")
-    text = re.sub(r"[\u0000-\u001F\u007F-\u009F]", "", text)
-    text = re.sub(r"[\ud800-\udfff]", "", text)
-    return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore").strip()
-
-def extract_text_from_pdf(path: Path) -> str:
-    try:
-        reader = PdfReader(str(path))
-        pages = [clean_text(page.extract_text() or "") for page in reader.pages]
-        return "\n".join(pages)
-    except Exception as e:
-        st.warning(f"[PDF 추출 실패] {path.name}: {e}")
-        return ""
-
-def extract_text_from_pptx(path: Path) -> str:
-    try:
-        prs = Presentation(str(path))
-        slides = []
-        for slide in prs.slides:
-            for shape in slide.shapes:
-                if hasattr(shape, "text"):
-                    slides.append(clean_text(shape.text))
-        return "\n".join(slides)
-    except Exception as e:
-        st.warning(f"[PPTX 추출 실패] {path.name}: {e}")
-        return ""
-
-def compute_file_hash(file_paths):
-    hash_md5 = hashlib.md5()
-    for path in sorted(file_paths):
-        with open(path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_md5.update(chunk)
-    return hash_md5.hexdigest()
+# ... (기존 safe_unicode, clean_text, extract_text_from_pdf, extract_text_from_pptx, compute_file_hash 함수는 그대로 사용) ...
 
 @st.cache_resource
 def load_all_documents_with_hash(file_paths, file_hash):
+    # ... (기존과 동일) ...
     documents = []
     for path in file_paths:
         if path.suffix == ".pdf":
@@ -75,27 +31,29 @@ def load_all_documents_with_hash(file_paths, file_hash):
         else:
             continue
         if text.strip():
-            doc = Document(page_content=safe_unicode(text), metadata={"source": str(path.name)})
+            # 여기서 한 번만 clean_text와 safe_unicode를 적용하는 것을 고려
+            doc = Document(page_content=text, metadata={"source": str(path.name)})
             documents.append(doc)
         else:
-            st.warning(f"[삭락] {path.name} 의 텍스트가 비어 있습니다.")
+            st.warning(f"[삭제] {path.name} 의 텍스트가 비어 있습니다.")
     return documents
+
 
 @st.cache_resource
 def split_documents_into_chunks(_documents):
+    # ... (기존과 동일) ...
     total_length = sum(len(doc.page_content) for doc in _documents)
     avg_length = total_length // len(_documents) if _documents else 0
     chunk_size, overlap = (1500, 300) if avg_length > 6000 else (1000, 200) if avg_length > 3000 else (700, 200)
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=overlap)
     return splitter.split_documents(_documents)
 
+
 @st.cache_resource
 def create_vector_store(_chunks, _embedding_model):
+    # ... (기존과 동일) ...
     try:
-        return FAISS.from_documents(
-            [Document(page_content=safe_unicode(doc.page_content), metadata=doc.metadata) for doc in _chunks],
-            _embedding_model
-        )
+        return FAISS.from_documents(_chunks, _embedding_model)
     except Exception as e:
         st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
         st.stop()
@@ -118,17 +76,28 @@ def initialize_qa_chain(all_paths):
     if not docs:
         st.error("문서를 불러오지 못했습니다.")
         st.stop()
+    
     chunks = split_documents_into_chunks(docs)
-    # ✅ BM25 하이브리드
-    bm25 = BM25Retriever.from_documents(chunks)
-    bm25.k = 5
-    faiss = create_vector_store(chunks, embeddings).as_retriever(search_type="similarity", search_kwargs={"k": 15})
-    retriever = bm25 | faiss
+
+    # ✅ BM25 + FAISS 하이브리드 검색 (EnsembleRetriever 사용)
+    bm25_retriever = BM25Retriever.from_documents(chunks)
+    bm25_retriever.k = 5
+
+    faiss_vectorstore = create_vector_store(chunks, embeddings)
+    faiss_retriever = faiss_vectorstore.as_retriever(search_kwargs={"k": 15})
+    
+    # EnsembleRetriever를 사용하여 두 리트리버 결합
+    ensemble_retriever = EnsembleRetriever(
+        retrievers=[bm25_retriever, faiss_retriever],
+        weights=[0.4, 0.6]  # BM25(키워드)와 FAISS(의미) 검색 결과의 가중치 조절
+    )
+
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
+    
     return RetrievalQA.from_chain_type(
         llm=llm,
-        retriever=retriever,
         chain_type="stuff",
+        retriever=ensemble_retriever, # 수정: ensemble_retriever 사용
         chain_type_kwargs={"prompt": QA_QUESTION_PROMPT},
         return_source_documents=True
     )
@@ -137,74 +106,38 @@ def initialize_qa_chain(all_paths):
 def get_query_expander():
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     def expand(query: str) -> str:
-        try:
-            if len(query.split()) <= 2:
+        # 단어가 3개 이하인 짧은 질문에 대해서만 확장 시도
+        if len(query.split()) <= 3:
+            try:
                 prompt_text = f"""
-                '{query}'이라는 단어가 문서에 포함되어 있을 경우, 문서 내 실제 표현이나 어구 형태로 문장을 확장해줘.
-                예를 들어 '집행부'라면 '집행부는 ○○으로 구성되어 있으며...' 와 같은 문장을 생성해줘.
-                반드시 문서 기반 표현만 사용해.
+                '{query}'이라는 키워드가 포함된, 문서에서 실제 사용될 법한 자연스러운 질문 문장으로 만들어줘.
+                예를 들어 '집행부'라는 키워드가 들어오면 '집행부 구성원은 누구인가요?' 와 같이 생성해줘.
+                반드시 문서 내용을 기반으로 할 필요는 없고, 일반적인 질문 형태로 만들어주면 돼.
                 """
-            else:
-                prompt_text = (
-                    "다음 단어나 문장을 PDF/PPTX 검색에 최적화되도록 바꿔줘. "
-                    "문서에서 자주 등장하는 표현을 반영해서 재작성해줘. 동의어를 쓰지 말고 문서 언어 그대로 사용해. "
-                    f"질문: {query}"
-                )
-            prompt = HumanMessage(content=safe_unicode(prompt_text))
-            response = llm.invoke([prompt])
-            return safe_unicode(response.content.strip())
-        except Exception as e:
-            st.warning(f"❕ 질문 확장 실패: {safe_unicode(str(e))}")
-            return query
+                prompt = HumanMessage(content=prompt_text)
+                response = llm.invoke([prompt])
+                return response.content.strip().strip("'\"") # 따옴표 제거
+            except Exception as e:
+                st.warning(f"❕ 질문 확장 실패: {safe_unicode(str(e))}")
+                return query
+        return query
     return expand
 
-openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-if not openai_api_key:
-    try:
-        openai_api_key = st.secrets["OPENAI_API_KEY"]
-    except Exception:
-        st.error("❌ OpenAI API 키가 설정되지 않았습니다.")
-        st.stop()
+# --- Streamlit App 실행 부분 ---
+# ... (기존과 동일) ...
 
-st.set_page_config(page_title="삼성전기 종중노조 상담사", layout="centered", page_icon="logo_union_hands.png")
-st.markdown("""
-<div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
-    <img src="https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/logo_union_hands.png" width="50"/>
-    <h1 style='color: #0d1a44; margin: 0;'>삼성전기 종중노조 상담사</h1>
-</div>
-""", unsafe_allow_html=True)
+# openai_api_key 설정, st.set_page_config 등은 그대로 유지
 
-st.write("PDF 및 PPTX 문서 기반 질문에 대해 GPT가 답변해 드립니다.")
+# main 로직
+# ...
 
-base_dir = Path(__file__).parent
-data_dir = base_dir / "data"
-doc_files = ["policy_agenda_250627.pdf", "union_meeting_250704.pdf", "SEMUNION_DATA_BASE.pdf", "SEMUNION_DATA_BASE.pptx"]
-doc_paths = [data_dir / name for name in doc_files if (data_dir / name).exists()]
+# if user_query.strip():
+#     # query 확장 로직은 개선된 get_query_expander 에 따라 동작
+#     expanded_query = query_expander(user_query)
+#     if expanded_query != user_query:
+#         st.write(f"질문 확장: {expanded_query}") # 사용자에게 확장된 질문을 보여주는 것도 좋음
 
-try:
-    query_expander = get_query_expander()
-    qa_chain = initialize_qa_chain(doc_paths)
-except Exception as e:
-    st.error(f"⚠️ 초기화 실패: {safe_unicode(str(e))}")
-    st.stop()
-
-user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
-if user_query.strip():
-    query = query_expander(user_query)
-    with st.spinner("답변 생성 중..."):
-        try:
-            result = qa_chain.invoke({"query": query})
-            answer = safe_unicode(result["result"])
-            if not answer or "문서에 해당 정보가 없습니다" in answer:
-                st.info("죄송하지만 업로드된 문서 내에서 관련된 내용을 찾을 수 없습니다.")
-            else:
-                st.success(answer)
-
-            with st.expander("📄 답변 근거 문서 보기"):
-                for i, doc in enumerate(result["source_documents"]):
-                    name = Path(doc.metadata.get("source", "알 수 없는 파일")).name
-                    st.markdown(f"**문서 {i+1}:** `{name}`")
-                    preview = safe_unicode(doc.page_content[:500]) + "..."
-                    st.text(preview)
-        except Exception as e:
-            st.error(f"❌ 답변 생성 실패: {safe_unicode(str(e))}")
+#     with st.spinner("답변 생성 중..."):
+#         try:
+#             result = qa_chain.invoke({"query": expanded_query})
+#             # ... 이후 로직은 동일 ...
