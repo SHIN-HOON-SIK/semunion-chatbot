@@ -14,6 +14,7 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
+from langchain.retrievers.multi_query import MultiQueryRetriever # 다중 질문 생성을 위한 라이브러리 추가
 from langchain.schema import Document
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
@@ -131,6 +132,7 @@ QA_QUESTION_PROMPT = PromptTemplate(
 def initialize_qa_chain(all_paths, api_key):
     """모든 구성요소를 초기화하여 QA 체인을 생성"""
     embeddings = OpenAIEmbeddings(openai_api_key=api_key)
+    llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
     file_hash = compute_file_hash(all_paths)
     docs = load_all_documents_with_hash(all_paths, file_hash)
     if not docs:
@@ -151,12 +153,16 @@ def initialize_qa_chain(all_paths, api_key):
         weights=[0.6, 0.4]
     )
 
-    llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
+    # --- 다중 질문 생성 기능 추가 ---
+    # AI가 하나의 질문을 여러 개의 상세한 질문으로 만들어서 검색하도록 설정
+    multi_query_retriever = MultiQueryRetriever.from_llm(
+        retriever=ensemble_retriever, llm=llm
+    )
     
     return RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",
-        retriever=ensemble_retriever,
+        retriever=multi_query_retriever, # 최종 리트리버로 multi_query_retriever를 사용
         chain_type_kwargs={"prompt": QA_QUESTION_PROMPT},
         return_source_documents=True
     )
