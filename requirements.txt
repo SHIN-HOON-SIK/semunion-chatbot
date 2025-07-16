@@ -4,6 +4,7 @@ langchain-community
 langchain-openai
 openai
 faiss-cpu
-unstructured   
+unstructured
 PyPDF2
 python-pptx
+rank_bm25
