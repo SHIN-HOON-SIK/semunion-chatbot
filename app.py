@@ -129,7 +129,7 @@ def get_query_expander():
         try:
             prompt = HumanMessage(content=safe_unicode(
                 "다음 단어나 문장을 PDF 검색에 최적화되도록 바꿔줘. "
-                "동의어는 사용하지 말고, PDF에서 실제 사용된 표현이나 구성으로 재작성해줘. "
+                "문서에서 자주 등장하는 표현을 반영해서 재작성해줘. 동의어를 쓰지 말고 문서 언어 그대로 사용해. "
                 f"질문: {query}"
             ))
             response = llm.invoke([prompt])
@@ -171,7 +171,7 @@ except Exception as e:
 
 user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
 if user_query.strip():
-    query = f"{query_expander(user_query)} | {user_query}"
+    query = query_expander(user_query)
     with st.spinner("답변 생성 중..."):
         try:
             result = qa_chain.invoke({"query": query})
