@@ -143,10 +143,10 @@ def initialize_qa_chain(all_paths, api_key):
 
     # 하이브리드 검색 설정 (BM25 + FAISS)
     bm25_retriever = BM25Retriever.from_documents(chunks)
-    bm25_retriever.k = 20
+    bm25_retriever.k = 15
 
     faiss_vectorstore = create_vector_store(chunks, embeddings)
-    faiss_retriever = faiss_vectorstore.as_retriever(search_kwargs={"k": 20})
+    faiss_retriever = faiss_vectorstore.as_retriever(search_kwargs={"k": 15})
     
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, faiss_retriever],
