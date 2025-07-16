@@ -131,7 +131,7 @@ def initialize_qa_chain(pdf_paths):
         st.stop()
     chunks = split_documents_into_chunks(docs)
     db = create_vector_store(chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 15})  # ← k=15로 강화
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 15})
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     return RetrievalQA.from_chain_type(
         llm=llm,
@@ -197,6 +197,8 @@ except Exception as e:
 user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
 if user_query.strip():
     query = query_expander(user_query)
+    if query.strip().lower() in ["집행부", "구성원", "임원"]:
+        query += " (현재 집행부 구성 또는 임원 명단을 알려줘)"
     with st.spinner("답변 생성 중..."):
         try:
             result = qa_chain.invoke({"query": query})
