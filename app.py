@@ -14,10 +14,14 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
-from langchain.retrievers.multi_query import MultiQueryRetriever # 다중 질문 생성을 위한 라이브러리 추가
+from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.schema import Document
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
+# --- 지능형 다중 질문 생성을 위한 라이브러리 추가 ---
+from langchain.chains.llm import LLMChain
+from langchain.output_parsers import LineListOutputParser
+
 
 # --------------------------------------------------------------------------
 # [1. 기본 유틸리티 함수 정의]
@@ -128,6 +132,20 @@ QA_QUESTION_PROMPT = PromptTemplate(
     input_variables=["context", "question"]
 )
 
+# --- 다중 질문 생성을 위한 AI 지침서(프롬프트) 정의 ---
+MULTI_QUERY_PROMPT_TEMPLATE = """당신은 대한민국 노동조합 챗봇의 AI 어시스턴트입니다.
+당신의 임무는 사용자의 질문을 바탕으로 내부 PDF/PPTX 문서에서 관련 정보를 찾기 위한 3가지 다른 버전의 질문을 생성하는 것입니다.
+문서에는 회사 정책, 노조 활동, 회의록, 합의서 등의 정보가 포함되어 있습니다.
+사용자 질문에 대한 여러 관점을 생성함으로써, 단순 키워드 검색의 한계를 극복하도록 도와야 합니다.
+노동조합원의 입장에서 할 법한 질문을 만드는 데 집중하세요. 예를 들어, '피플팀'과 같은 부서 이름이 입력되면 역할, 관련 문제, 연락처 등에 대한 질문을 생성하세요.
+대안 질문들은 줄바꿈으로 구분하여 제공하세요.
+기존 질문: {question}"""
+
+MULTI_QUERY_PROMPT = PromptTemplate(
+    input_variables=["question"],
+    template=MULTI_QUERY_PROMPT_TEMPLATE,
+)
+
 @st.cache_resource
 def initialize_qa_chain(all_paths, api_key):
     """모든 구성요소를 초기화하여 QA 체인을 생성"""
@@ -143,20 +161,22 @@ def initialize_qa_chain(all_paths, api_key):
 
     # 하이브리드 검색 설정 (BM25 + FAISS)
     bm25_retriever = BM25Retriever.from_documents(chunks)
-    bm25_retriever.k = 15
+    bm25_retriever.k = 20
 
     faiss_vectorstore = create_vector_store(chunks, embeddings)
-    faiss_retriever = faiss_vectorstore.as_retriever(search_kwargs={"k": 15})
+    faiss_retriever = faiss_vectorstore.as_retriever(search_kwargs={"k": 20})
     
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, faiss_retriever],
-        weights=[0.7, 0.3]
+        weights=[0.6, 0.4]
     )
 
-    # --- 다중 질문 생성 기능 추가 ---
-    # AI가 하나의 질문을 여러 개의 상세한 질문으로 만들어서 검색하도록 설정
-    multi_query_retriever = MultiQueryRetriever.from_llm(
-        retriever=ensemble_retriever, llm=llm
+    # --- 지능형 다중 질문 생성 기능 설정 ---
+    # 위에서 정의한 커스텀 지침서(프롬프트)를 사용하여 LLMChain을 생성
+    llm_chain = LLMChain(llm=llm, prompt=MULTI_QUERY_PROMPT, output_parser=LineListOutputParser())
+    
+    multi_query_retriever = MultiQueryRetriever(
+        retriever=ensemble_retriever, llm_chain=llm_chain
     )
     
     return RetrievalQA.from_chain_type(
@@ -207,7 +227,6 @@ except Exception as e:
 user_query = st.text_input("궁금하신 내용은 아래 창에 질문을 해보세요!", placeholder="여기에 최대한 구체적으로 질문 부탁드립니다.")
 
 if user_query.strip():
-    # 질문 확장 기능을 사용하지 않고, 사용자 입력을 그대로 검색
     with st.spinner("답변 생성 중..."):
         try:
             result = qa_chain.invoke({"query": user_query})
