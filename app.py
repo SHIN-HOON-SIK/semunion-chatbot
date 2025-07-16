@@ -15,18 +15,15 @@ from langchain.schema import Document, HumanMessage
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
-# 🎯 1. Windows 인코딩 문제 해결
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
-# ✅ 2. 안전한 유니코드 정리 함수
 def safe_unicode(text: str) -> str:
     if not isinstance(text, str):
         text = str(text)
     return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
 
-# ✅ 3. PDF 전체 문자열 클리너 함수
 def clean_text(text):
     if not isinstance(text, str):
         return ""
@@ -35,7 +32,6 @@ def clean_text(text):
     text = re.sub(r"[\ud800-\udfff]", "", text)
     return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore").strip()
 
-# ✅ 4. PDF 텍스트 추출
 def extract_text_from_pdf(path: Path) -> str:
     try:
         reader = PdfReader(str(path))
@@ -48,7 +44,6 @@ def extract_text_from_pdf(path: Path) -> str:
         st.warning(f"[PDF 추출 실패] {path.name}: {e}")
         return ""
 
-# ✅ 5. 파일 해시
 def compute_file_hash(file_paths):
     hash_md5 = hashlib.md5()
     for path in sorted(file_paths):
@@ -57,7 +52,6 @@ def compute_file_hash(file_paths):
                 hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-# ✅ 6. 문서 로딩
 @st.cache_resource
 def load_all_documents_with_hash(pdf_paths, file_hash):
     documents = []
@@ -70,7 +64,6 @@ def load_all_documents_with_hash(pdf_paths, file_hash):
             st.warning(f"[삭락] {path.name} 의 텍스트가 비어 있습니다.")
     return documents
 
-# ✅ 7. chunk 분리
 @st.cache_resource
 def split_documents_into_chunks(_documents):
     total_length = sum(len(doc.page_content) for doc in _documents)
@@ -86,7 +79,6 @@ def split_documents_into_chunks(_documents):
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=overlap)
     return splitter.split_documents(_documents)
 
-# ✅ 8. FAISS 벡터 DB
 @st.cache_resource
 def create_vector_store(_chunks, _embedding_model):
     try:
@@ -100,7 +92,6 @@ def create_vector_store(_chunks, _embedding_model):
         st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
         st.stop()
 
-# ✅ 9. 사용자 정의 프롬프트로 LLM 추론 제한
 QA_SYSTEM_PROMPT = """
 너는 반드시 PDF 문서에 포함된 내용만 바탕으로 답해야 해.
 문서에 명시적 언급이 없거나 애매한 경우 '문서에 해당 정보가 없습니다.'라고 답해.
@@ -111,7 +102,6 @@ QA_QUESTION_PROMPT = PromptTemplate(
     input_variables=["context", "question"]
 )
 
-# ✅ 10. QA 체인
 @st.cache_resource
 def initialize_qa_chain(pdf_paths):
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
@@ -132,16 +122,14 @@ def initialize_qa_chain(pdf_paths):
         return_source_documents=True
     )
 
-# ✅ 11. 질문 확장
 @st.cache_resource
 def get_query_expander():
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     def expand(query: str) -> str:
         try:
             prompt = HumanMessage(content=safe_unicode(
-                "다음 단어 또는 문장을 PDF 검색에 최적화되도록 바꿔줘. "
-                "가능하면 PDF에서 직접적으로 등장할 법한 표현이나 구성으로 재작성해줘. "
-                "단어가 짧더라도 키워드 매칭을 최우선으로 하고, 부연 설명이 필요하면 덧붙여도 좋아. "
+                "다음 단어나 문장을 PDF 검색에 최적화되도록 바꿔줘. "
+                "동의어는 사용하지 말고, PDF에서 실제 사용된 표현이나 구성으로 재작성해줘. "
                 f"질문: {query}"
             ))
             response = llm.invoke([prompt])
@@ -151,7 +139,6 @@ def get_query_expander():
             return query
     return expand
 
-# ✅ 12. OpenAI 키 설정
 openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
 if not openai_api_key:
     try:
@@ -160,7 +147,6 @@ if not openai_api_key:
         st.error("❌ OpenAI API 키가 설정되지 않았습니다.")
         st.stop()
 
-# ✅ 13. Streamlit UI
 st.set_page_config(page_title="삼성전기 종중노조 상담사", layout="centered", page_icon="logo_union_hands.png")
 st.markdown("""
 <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
@@ -185,7 +171,7 @@ except Exception as e:
 
 user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
 if user_query.strip():
-    query = query_expander(user_query)
+    query = f"{query_expander(user_query)} | {user_query}"
     with st.spinner("답변 생성 중..."):
         try:
             result = qa_chain.invoke({"query": query})
