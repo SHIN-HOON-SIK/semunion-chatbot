@@ -71,7 +71,7 @@ def load_all_documents_with_hash(pdf_paths, file_hash):
             doc = Document(page_content=safe_unicode(text), metadata={"source": str(path.name)})
             documents.append(doc)
         else:
-            st.warning(f"[생략] {path.name} 의 텍스트가 비어 있습니다.")
+            st.warning(f"[삭락] {path.name} 의 텍스트가 비어 있습니다.")
     return documents
 
 # ✅ 7. chunk 분리
@@ -91,7 +91,7 @@ def split_documents_into_chunks(_documents):
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=overlap)
     return splitter.split_documents(_documents)
 
-# ✅ 8. FAISS 벡터 DB
+# ✅ 8. FAISS 베터 DB
 
 @st.cache_resource
 def create_vector_store(_chunks, _embedding_model):
@@ -103,7 +103,7 @@ def create_vector_store(_chunks, _embedding_model):
             _embedding_model
         )
     except Exception as e:
-        st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
+        st.error(f"❌ FAISS 베터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
         st.stop()
 
 # ✅ 9. QA 체인
@@ -114,7 +114,7 @@ def initialize_qa_chain(pdf_paths):
     file_hash = compute_file_hash(pdf_paths)
     docs = load_all_documents_with_hash(pdf_paths, file_hash)
     if not docs:
-        st.error("PDF 문서를 불러올 수 없습니다.")
+        st.error("PDF 문서를 불러오지 못했습니다.")
         st.stop()
     chunks = split_documents_into_chunks(docs)
     db = create_vector_store(chunks, embeddings)
@@ -130,7 +130,7 @@ def get_query_expander():
     def expand(query: str) -> str:
         try:
             prompt = HumanMessage(content=safe_unicode(
-                "사용자의 질문을 PDF 내용과 잘 매칭되도록 구체적이고 명확한 문장으로 바꾸어줘."
+                "사용자의 질문을 PDF 내용과 잘 매칭되도록 구체적이고 명확한 문장으로 바꾼 해주어."
                 f" 질문: {query}"
             ))
             response = llm.invoke([prompt])
@@ -152,9 +152,15 @@ if not openai_api_key:
 
 # ✅ 12. Streamlit UI
 
-st.set_page_config(page_title="삼성전기 존중노조 상담사", layout="centered", page_icon="logo_union_hands.png")
-st.title("📘 삼성전기 존중노조 상담사")
-st.write("PDF 문서 기반 질문에 대해 GPT가 답변해 드립니다.")
+st.set_page_config(page_title="삼성전기 종중노조 상담사", layout="centered", page_icon="logo_union_hands.png")
+st.markdown("""
+<div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
+    <img src="https://raw.githubusercontent.com/SHIN-HOON-SIK/semunion-chatbot/main/logo_union_hands.png" width="50"/>
+    <h1 style='color: #0d1a44; margin: 0;'>삼성전기 종중노조 상담사</h1>
+</div>
+""", unsafe_allow_html=True)
+
+st.write("PDF 문서 기반 질문에 대해 GPT가 답변해 드림니다.")
 
 base_dir = Path(__file__).parent
 pdf_dir = base_dir / "data"
@@ -168,7 +174,7 @@ except Exception as e:
     st.error(f"⚠️ 초기화 실패: {safe_unicode(str(e))}")
     st.stop()
 
-user_query = st.text_input("무엇이 궁금하신가요?", placeholder="예: 집행부 구성은?")
+user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
 if user_query.strip():
     query = query_expander(user_query)
     with st.spinner("답변 생성 중..."):
@@ -177,10 +183,10 @@ if user_query.strip():
             answer = safe_unicode(result["result"])
             st.success(answer or "정보를 찾을 수 없습니다.")
 
-            with st.expander("📄 답변 근거 문서 보기"):
+            with st.expander("파본 구글 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
                     name = Path(doc.metadata.get("source", "알 수 없는 파일")).name
-                    st.markdown(f"**문서 {i+1}:** `{name}`)
+                    st.markdown(f"**문서 {i+1}:** `{name}`")
                     preview = safe_unicode(doc.page_content[:500]) + "..."
                     st.text(preview)
         except Exception as e:
