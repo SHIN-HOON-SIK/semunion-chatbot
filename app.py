@@ -130,9 +130,8 @@ def get_query_expander():
     def expand(query: str) -> str:
         try:
             prompt = HumanMessage(content=safe_unicode(
-                "사용자의 질문을 PDF 내용과 잘 매칭되도록 구체적이고 명확한 문장으로 바꾸어줘. "
-                "김보경처럼 단일 키워드로 입력된 경우, 해당 인물의 직책, 조직, 관련 활동 등을 포함하여 PDF 내에서 문맥적으로 검색되도록 확장해줘. "
-                f"질문: {query}"
+                "사용자의 질문을 PDF 내용과 잘 매칭되도록 구체적이고 명확한 문장으로 바꾸어줘."
+                f" 질문: {query}"
             ))
             response = llm.invoke([prompt])
             return safe_unicode(response.content.strip())
@@ -181,7 +180,7 @@ if user_query.strip():
             with st.expander("📄 답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
                     name = Path(doc.metadata.get("source", "알 수 없는 파일")).name
-                    st.markdown(f"**문서 {i+1}:** `{name}`")
+                    st.markdown(f"**문서 {i+1}:** `{name}`)
                     preview = safe_unicode(doc.page_content[:500]) + "..."
                     st.text(preview)
         except Exception as e:
