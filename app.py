@@ -148,7 +148,7 @@ def initialize_qa_chain(all_paths, api_key):
     
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, faiss_retriever],
-        weights=[0.6, 0.4]
+        weights=[0.4, 0.6]
     )
 
     llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
@@ -198,7 +198,7 @@ except Exception as e:
     st.stop()
 
 # [사용자 질문 입력 및 답변 처리]
-user_query = st.text_input("무엇이 궁금하시나요?", placeholder="여기에 최대한 구체적으로 질문 부탁드립니다.")
+user_query = st.text_input("궁금하신 내용은 아래 창에 질문을 해보세요!", placeholder="여기에 최대한 구체적으로 질문 부탁드립니다.")
 
 if user_query.strip():
     # 질문 확장 기능을 사용하지 않고, 사용자 입력을 그대로 검색
