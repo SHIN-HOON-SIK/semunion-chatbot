@@ -1,5 +1,4 @@
-# union_chatbot_app.py
-# -*- coding: utf-8 -*-
+# app.py - 전체 리팩터링 통합 버전
 
 import os
 import sys
@@ -15,19 +14,12 @@ from langchain.schema import Document, HumanMessage
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
-# 🎯 1. Windows 인코딩 문제 해결
-if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
-
-# ✅ 2. 안전한 유니코드 정리 함수
+# ✅ 유니코드 및 문자열 처리
 
 def safe_unicode(text: str) -> str:
     if not isinstance(text, str):
         text = str(text)
     return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore")
-
-# ✅ 3. PDF 전체 문자열 클리너 함수
 
 def clean_text(text):
     if not isinstance(text, str):
@@ -35,23 +27,26 @@ def clean_text(text):
     text = text.replace("\x00", "")
     text = re.sub(r"[\u0000-\u001F\u007F-\u009F]", "", text)
     text = re.sub(r"[\ud800-\udfff]", "", text)
-    return text.encode("utf-8", errors="ignore").decode("utf-8", errors="ignore").strip()
+    return safe_unicode(text.strip())
 
-# ✅ 4. PDF 텍스트 추출
+# ✅ PDF 텍스트 및 메타데이터 추출
 
-def extract_text_from_pdf(path: Path) -> str:
+def extract_text_from_pdf(path: Path) -> list:
     try:
         reader = PdfReader(str(path))
         pages = []
-        for page in reader.pages:
+        for i, page in enumerate(reader.pages):
             raw = page.extract_text() or ""
-            pages.append(clean_text(raw))
-        return "\n".join(pages)
+            pages.append(Document(
+                page_content=clean_text(raw),
+                metadata={"source": path.name, "page_number": i + 1}
+            ))
+        return pages
     except Exception as e:
         st.warning(f"[PDF 추출 실패] {path.name}: {e}")
-        return ""
+        return []
 
-# ✅ 5. 파일 해시
+# ✅ 해시 기반 중복 방지 캐싱
 
 def compute_file_hash(file_paths):
     hash_md5 = hashlib.md5()
@@ -61,96 +56,47 @@ def compute_file_hash(file_paths):
                 hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-# ✅ 6. 문서 로딩
-
 @st.cache_resource
-def load_all_documents_with_hash(pdf_paths, file_hash):
+def load_documents_with_metadata(pdf_paths):
     documents = []
     for path in pdf_paths:
-        text = extract_text_from_pdf(path)
-        if text.strip():
-            doc = Document(page_content=safe_unicode(text), metadata={"source": str(path.name)})
-            documents.append(doc)
-        else:
-            st.warning(f"[삭락] {path.name} 의 텍스트가 비어 있습니다.")
+        pages = extract_text_from_pdf(path)
+        documents.extend(pages)
     return documents
 
-# ✅ 7. chunk 분리
+# ✅ chunk 크기 조정 (자동 + 수동)
 
-@st.cache_resource
-def split_documents_into_chunks(_documents):
-    total_length = sum(len(doc.page_content) for doc in _documents)
-    avg_length = total_length // len(_documents) if _documents else 0
-
+def get_chunk_config(documents):
+    total_length = sum(len(doc.page_content) for doc in documents)
+    avg_length = total_length // len(documents) if documents else 0
     if avg_length > 6000:
-        chunk_size, overlap = 1500, 300
+        return 1500, 300
     elif avg_length > 3000:
-        chunk_size, overlap = 1000, 200
+        return 1000, 200
     else:
-        chunk_size, overlap = 700, 200  # ← 오버랩 강화
+        return 700, 200
 
+@st.cache_resource
+def split_documents_into_chunks(documents, chunk_size, overlap):
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=overlap)
-    return splitter.split_documents(_documents)
+    return splitter.split_documents(documents)
 
-# ✅ 8. FAISS 벡터 DB
+# ✅ 벡터 DB 생성
 
-@st.cache_resource
-def create_vector_store(_chunks, _embedding_model):
-    try:
-        for doc in _chunks:
-            doc.page_content = safe_unicode(doc.page_content)
-        return FAISS.from_documents(
-            [Document(page_content=safe_unicode(doc.page_content), metadata=doc.metadata) for doc in _chunks],
-            _embedding_model
-        )
-    except Exception as e:
-        st.error(f"❌ FAISS 벡터 DB 생성 중 오류 발생: {safe_unicode(str(e))}")
-        st.stop()
+def initialize_vector_store(chunks, api_key):
+    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
+    for doc in chunks:
+        doc.page_content = safe_unicode(doc.page_content)
+    return FAISS.from_documents(chunks, embeddings)
 
-# ✅ 9. 사용자 정의 프롬프트로 LLM 추론 제한
+# ✅ 질문 확장
 
-QA_SYSTEM_PROMPT = """
-너는 반드시 PDF 문서에 포함된 내용만 바탕으로 답해야 해.
-문서에 명시적 언급이 없거나 애매한 경우 '문서에 해당 정보가 없습니다.'라고 답해.
-"""
-
-QA_QUESTION_PROMPT = PromptTemplate(
-    template=QA_SYSTEM_PROMPT + "\n\n{context}\n\n질문: {question}\n답변:",
-    input_variables=["context", "question"]
-)
-
-# ✅ 10. QA 체인
-
-@st.cache_resource
-def initialize_qa_chain(pdf_paths):
-    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-    file_hash = compute_file_hash(pdf_paths)
-    docs = load_all_documents_with_hash(pdf_paths, file_hash)
-    if not docs:
-        st.error("PDF 문서를 불러오지 못했습니다.")
-        st.stop()
-    chunks = split_documents_into_chunks(docs)
-    db = create_vector_store(chunks, embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 15})
-    llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
-    return RetrievalQA.from_chain_type(
-        llm=llm,
-        retriever=retriever,
-        chain_type="stuff",
-        chain_type_kwargs={"prompt": QA_QUESTION_PROMPT},
-        return_source_documents=True
-    )
-
-# ✅ 11. 질문 확장
-
-@st.cache_resource
-def get_query_expander():
-    llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
+def get_query_expander(api_key):
+    llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
     def expand(query: str) -> str:
         try:
             prompt = HumanMessage(content=safe_unicode(
-                "다음 단어 또는 문장을 PDF 검색에 최적화되도록 바꿔줘. "
-                "가능하다면 PDF 내 자주 나오는 표현이나 문장 형태로 재작성하고, 문맥이 애매하면 보완 설명도 포함해줘. "
+                "다음 문장을 PDF 검색에 최적화되도록 바꿔줘. PDF 내 자주 나오는 표현이나 문장 형태로 재작성하고, 문맥이 애매하면 부연 설명도 넣어줘.\n"
                 f"질문: {query}"
             ))
             response = llm.invoke([prompt])
@@ -160,18 +106,28 @@ def get_query_expander():
             return query
     return expand
 
-# ✅ 12. OpenAI 키 설정
+# ✅ QA 체인 생성
 
-openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-if not openai_api_key:
-    try:
-        openai_api_key = st.secrets["OPENAI_API_KEY"]
-    except Exception:
-        st.error("❌ OpenAI API 키가 설정되지 않았습니다.")
-        st.stop()
+def initialize_qa_chain(vector_store, api_key):
+    system_prompt = """
+너는 반드시 PDF 문서에 포함된 내용만 바탕으로 답해야 해.
+문서에 명시적 언급이 없거나 애매한 경우 '문서에 해당 정보가 없습니다.'라고 답해.
+"""
+    qa_prompt = PromptTemplate(
+        template=system_prompt + "\n\n{context}\n\n질문: {question}\n답변:",
+        input_variables=["context", "question"]
+    )
+    retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 15})
+    llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
+    return RetrievalQA.from_chain_type(
+        llm=llm,
+        retriever=retriever,
+        chain_type="stuff",
+        chain_type_kwargs={"prompt": qa_prompt},
+        return_source_documents=True
+    )
 
-# ✅ 13. Streamlit UI
-
+# ✅ Streamlit UI 구성
 st.set_page_config(page_title="삼성전기 종중노조 상담사", layout="centered", page_icon="logo_union_hands.png")
 st.markdown("""
 <div style='display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;'>
@@ -182,14 +138,28 @@ st.markdown("""
 
 st.write("PDF 문서 기반 질문에 대해 GPT가 답변해 드립니다.")
 
+openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+if not openai_api_key:
+    try:
+        openai_api_key = st.secrets["OPENAI_API_KEY"]
+    except Exception:
+        st.error("❌ OpenAI API 키가 설정되지 않았습니다.")
+        st.stop()
+
 base_dir = Path(__file__).parent
 pdf_dir = base_dir / "data"
 pdf_files = ["policy_agenda_250627.pdf", "union_meeting_250704.pdf", "SEMUNION_DATA_BASE.pdf"]
 pdf_paths = [pdf_dir / name for name in pdf_files]
 
 try:
-    query_expander = get_query_expander()
-    qa_chain = initialize_qa_chain(pdf_paths)
+    documents = load_documents_with_metadata(pdf_paths)
+    chunk_size, overlap = get_chunk_config(documents)
+    chunk_size = st.sidebar.slider("Chunk 크기", 300, 2000, chunk_size, step=100)
+    overlap = st.sidebar.slider("Overlap", 0, 500, overlap, step=50)
+    chunks = split_documents_into_chunks(documents, chunk_size, overlap)
+    vector_store = initialize_vector_store(chunks, openai_api_key)
+    query_expander = get_query_expander(openai_api_key)
+    qa_chain = initialize_qa_chain(vector_store, openai_api_key)
 except Exception as e:
     st.error(f"⚠️ 초기화 실패: {safe_unicode(str(e))}")
     st.stop()
@@ -197,21 +167,20 @@ except Exception as e:
 user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
 if user_query.strip():
     query = query_expander(user_query)
-    if query.strip().lower() in ["집행부", "구성원", "임원"]:
-        query += " (현재 집행부 구성 또는 임원 명단을 알려줘)"
     with st.spinner("답변 생성 중..."):
         try:
             result = qa_chain.invoke({"query": query})
             answer = safe_unicode(result["result"])
             if not answer or "문서에 해당 정보가 없습니다" in answer:
-                st.info("죄송하지만 업로드된 문서 내에서 관련된 내용을 찾을 수 없습니다.")
+                st.info("문서 내에서 관련된 내용을 찾을 수 없습니다.")
             else:
                 st.success(answer)
 
             with st.expander("📄 답변 근거 문서 보기"):
                 for i, doc in enumerate(result["source_documents"]):
                     name = Path(doc.metadata.get("source", "알 수 없는 파일")).name
-                    st.markdown(f"**문서 {i+1}:** `{name}`")
+                    page = doc.metadata.get("page_number", "?")
+                    st.markdown(f"**문서 {i+1}:** `{name}` (p.{page})")
                     preview = safe_unicode(doc.page_content[:500]) + "..."
                     st.text(preview)
         except Exception as e:
