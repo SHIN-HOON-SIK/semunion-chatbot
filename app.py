@@ -148,7 +148,7 @@ def initialize_qa_chain(all_paths, api_key):
     
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, faiss_retriever],
-        weights=[0.5, 0.5]
+        weights=[0.6, 0.4]
     )
 
     llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
