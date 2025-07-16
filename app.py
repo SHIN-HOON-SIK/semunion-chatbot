@@ -89,7 +89,7 @@ st.write("안녕하세요! 노조 집행부에서 업로드 한 자료에 기반
 def clean_text(text):
 text = text.replace("\x00", "")
 text = re.sub(r"[\u0000-\u001F\u007F-\u009F]", "", text)
-text = re.sub(r"\\ud[0-9a-fA-F]{3}", "", text) # 유니코드 surrogate 제거
+text = re.sub(r"\\ud[0-9a-fA-F]{3}", "", text)
 return text.encode("utf-8", "ignore").decode("utf-8", "ignore")
 
 # PDF 전처리 텍스트 추출 함수
@@ -125,7 +125,20 @@ return all_docs
 
 @st.cache_resource
 def split_documents_into_chunks(_documents):
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
+total_length = sum(len(doc.page_content) for doc in _documents)
+avg_length = total_length // len(_documents) if _documents else 0
+
+if avg_length > 6000:
+chunk_size, chunk_overlap = 1500, 300
+elif avg_length > 3000:
+chunk_size, chunk_overlap = 1000, 200
+else:
+chunk_size, chunk_overlap = 700, 100
+
+text_splitter = RecursiveCharacterTextSplitter(
+chunk_size=chunk_size,
+chunk_overlap=chunk_overlap
+)
 return text_splitter.split_documents(_documents)
 
 @st.cache_resource
@@ -156,7 +169,7 @@ retriever=retriever,
 return_source_documents=True
 )
 
-# 질문 보정용 확장 함수
+# ✅ 질문 보정용 확장 함수 - 강화된 프롬프트 적용
 @st.cache_resource
 def get_query_expander():
 llm = ChatOpenAI(
@@ -167,9 +180,9 @@ temperature=0
 def expand(query):
 try:
 prompt_text = (
-"다음 사용자의 질문을 명확하고 구체적인 문장으로 바꿔줘. "
-"예시: '집행부' → '존중노동조합의 집행부 구성은 어떻게 되어 있나요?'. "
-f"질문: {query}"
+"사용자의 질문을 PDF 내용과 잘 매칭될 수 있도록 주요 키워드를 포함한 구체적이고 명확한 문장으로 바꿔줘. "
+"PDF 내 자주 등장하는 표현과 용어를 반영해서 검색 성공률을 높여줘. 부연 설명이 필요하면 덧붙여도 좋아."
+f" 질문: {query}"
 )
 prompt = HumanMessage(content=prompt_text)
 response = llm.invoke([prompt])
