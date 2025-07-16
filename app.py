@@ -12,7 +12,8 @@ from pptx import Presentation
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
-from langchain.retrievers import BM25Retriever, EnsembleRetriever # 수정: EnsembleRetriever 임포트
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
 from langchain.schema import Document, HumanMessage
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
