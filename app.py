@@ -148,7 +148,7 @@ def initialize_qa_chain(all_paths, api_key):
     
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, faiss_retriever],
-        weights=[0.7, 0.3]
+        weights=[0.6, 0.4]
     )
 
     llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-4o", temperature=0)
@@ -182,7 +182,7 @@ st.markdown("""
     <h1 style='color: #0d1a44; margin: 0;'>삼성전기 종중노조 상담사</h1>
 </div>
 """, unsafe_allow_html=True)
-st.write("PDF 및 PPTX 문서 기반 질문에 대해 GPT가 답변해 드립니다.")
+st.write("노조 집행부에서 등록한 PDF 및 PPTX 문서 기반으로 질문하신 내용에 답변해 드립니다.")
 
 # [문서 경로 설정]
 base_dir = Path(__file__).parent
@@ -198,7 +198,7 @@ except Exception as e:
     st.stop()
 
 # [사용자 질문 입력 및 답변 처리]
-user_query = st.text_input("무엇이 궁금하시나요?", placeholder="예: 집행부 구성은?")
+user_query = st.text_input("무엇이 궁금하시나요?", placeholder="여기에 최대한 구체적으로 질문 부탁드립니다.")
 
 if user_query.strip():
     # 질문 확장 기능을 사용하지 않고, 사용자 입력을 그대로 검색
@@ -208,11 +208,11 @@ if user_query.strip():
             answer = result["result"]
             
             if not answer or "문서에 해당 정보가 없습니다" in answer:
-                st.info("죄송하지만 업로드된 문서 내에서 관련된 내용을 찾을 수 없습니다.")
+                st.info("죄송하지만 업로드된 문서 내에서 관련된 내용을 찾을 수 없습니다. 또는 조금 더 구체적으로 질문 부탁드립니다.")
             else:
                 st.success(answer)
 
-            with st.expander("📄 답변 근거 문서 보기"):
+            with st.expander("📄 답변 근거 문서"):
                 source_docs = result.get("source_documents", [])
                 if source_docs:
                     for i, doc in enumerate(source_docs):
