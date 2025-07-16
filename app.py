@@ -8,7 +8,7 @@ import hashlib
 from pathlib import Path
 import streamlit as st
 from PyPDF2 import PdfReader
-from pptx import Presentation  # ✅ 이 라인을 사용하기 위해 python-pptx 설치 필요
+from pptx import Presentation
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
@@ -134,11 +134,19 @@ def get_query_expander():
     llm = ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o", temperature=0)
     def expand(query: str) -> str:
         try:
-            prompt = HumanMessage(content=safe_unicode(
-                "다음 단어나 문장을 PDF/PPTX 검색에 최적화되도록 바꿔줘. "
-                "문서에서 자주 등장하는 표현을 반영해서 재작성해줘. 동의어를 쓰지 말고 문서 언어 그대로 사용해. "
-                f"질문: {query}"
-            ))
+            if len(query.split()) <= 2:
+                prompt_text = f"""
+                '{query}'이라는 단어가 문서에 포함되어 있을 경우, 문서 내 실제 표현이나 어구 형태로 문장을 확장해줘.
+                예를 들어 '집행부'라면 '집행부는 ○○으로 구성되어 있으며...' 와 같은 문장을 생성해줘.
+                반드시 문서 기반 표현만 사용해.
+                """
+            else:
+                prompt_text = (
+                    "다음 단어나 문장을 PDF/PPTX 검색에 최적화되도록 바꿔줘. "
+                    "문서에서 자주 등장하는 표현을 반영해서 재작성해줘. 동의어를 쓰지 말고 문서 언어 그대로 사용해. "
+                    f"질문: {query}"
+                )
+            prompt = HumanMessage(content=safe_unicode(prompt_text))
             response = llm.invoke([prompt])
             return safe_unicode(response.content.strip())
         except Exception as e:
