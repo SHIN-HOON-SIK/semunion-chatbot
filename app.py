@@ -18,9 +18,9 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.schema import Document
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-# --- 지능형 다중 질문 생성을 위한 라이브러리 추가 ---
+# --- 지능형 다중 질문 생성을 위한 라이브러리 추가 (경로 수정) ---
 from langchain.chains.llm import LLMChain
-from langchain.output_parsers import LineListOutputParser
+from langchain_core.output_parsers import LineListOutputParser
 
 
 # --------------------------------------------------------------------------
