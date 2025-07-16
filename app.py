@@ -8,7 +8,7 @@ import hashlib
 from pathlib import Path
 import streamlit as st
 from PyPDF2 import PdfReader
-from pptx import Presentation
+from pptx import Presentation  # ✅ 이 라인을 사용하기 위해 python-pptx 설치 필요
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
