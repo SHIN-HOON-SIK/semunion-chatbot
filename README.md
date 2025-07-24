@@ -1,6 +1,6 @@
 ---
 title: semunion-chatbot
-emoji: 🧠
+emoji: 😊
 colorFrom: indigo
 colorTo: blue
 sdk: streamlit
