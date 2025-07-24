@@ -1,10 +1,13 @@
-# 📚 삼성전기 존중노동조합 상담 챗봇
-
-Streamlit과 LangChain 기반으로, PDF 문서를 임베딩하고 GPT-4o를 활용해 노조 관련 질문에 자동 응답하는 AI 챗봇입니다.
-
+---
+title: semunion-chatbot
+emoji: 🧠
+colorFrom: indigo
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.32.0
+app_file: app.py
+pinned: false
 ---
 
-## 🔧 주요 기능
-
-- 📄 PDF 문서 기반 질의응답
-...
+# Semunion 챗봇
+삼성전기 조합원을 위한 전용 PDF 질의응답 챗봇
